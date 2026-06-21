@@ -23,6 +23,8 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoveUp
+import androidx.compose.material.icons.filled.RemoveCircle
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -59,6 +61,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import cc.tomko.outify.core.model.Artist
 import cc.tomko.outify.core.model.Track
+import cc.tomko.outify.data.repository.SettingsRepository
+import cc.tomko.outify.ui.components.rows.SwipeGesture
+import cc.tomko.outify.ui.components.rows.SwipeableRowWithGestures
 import cc.tomko.outify.ui.components.rows.SwipeableTrackRowConfigured
 import cc.tomko.outify.ui.viewmodel.player.MultiQueueViewModel
 import cc.tomko.outify.ui.viewmodel.player.QueueViewModel
@@ -354,6 +359,41 @@ fun SharedTransitionScope.QueueBottomSheet(
                                         }
 
                                         SwipeableTrackRowConfigured(
+                                            startGestures = listOf(
+                                                // Play next
+                                                SwipeGesture(
+                                                    thresholdFraction = 0.25f,
+                                                    icon = { Icon(Icons.Default.MoveUp, contentDescription = null) },
+                                                    onTrigger = {
+                                                        val currentUri = currentTrack?.uri
+                                                        val mutable = localTracks.toMutableList()
+                                                        mutable.remove(item)
+                                                        val currentIdx = mutable.indexOfFirst { it.track.uri == currentUri }
+                                                        val insertAt = (currentIdx + 1).coerceIn(0, mutable.size)
+                                                        mutable.add(insertAt, item)
+                                                        val newCurrentIdx = mutable.indexOfFirst { it.track.uri == currentUri }
+                                                            .coerceAtLeast(0)
+                                                        viewModel.setQueueEntries(mutable, newCurrentIdx)
+                                                        viewModel.debouncedSaveToRepository(mutable)
+                                                    }
+                                                ),
+                                            ),
+                                            endGestures = listOf(
+                                                // Remove from queue
+                                                SwipeGesture(
+                                                    thresholdFraction = 0.25f,
+                                                    icon = { Icon(Icons.Default.RemoveCircle, contentDescription = null) },
+                                                    onTrigger = {
+                                                        val currentUri = currentTrack?.uri
+                                                        val mutable = localTracks.toMutableList()
+                                                        mutable.remove(item)
+                                                        val newCurrentIdx = mutable.indexOfFirst { it.track.uri == currentUri }
+                                                            .coerceAtLeast(0)
+                                                        viewModel.setQueueEntries(mutable, newCurrentIdx)
+                                                        viewModel.debouncedSaveToRepository(mutable)
+                                                    }
+                                                )
+                                            ),
                                             track = item.track,
                                             currentTrack = currentTrack,
                                             isPlaybackPlaying = isPlaybackPlaying,

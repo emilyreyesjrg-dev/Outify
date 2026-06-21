@@ -59,6 +59,9 @@ fun SharedTransitionScope.SwipeableTrackRowConfigured(
     onArtistClick: ((Artist) -> Unit)? = null,
 
     trailingContent: @Composable (() -> Unit)? = null,
+
+    startGestures: List<SwipeGesture>? = null,
+    endGestures: List<SwipeGesture>? = null,
 ) {
     if (track == null) {
         Row(
@@ -102,12 +105,17 @@ fun SharedTransitionScope.SwipeableTrackRowConfigured(
     }
 
     BoxWithConstraints(modifier = modifier) {
-        val (start, end) = rememberTrackGestures(track, isLiked)
+        val (start, end) = if (startGestures != null && endGestures != null) {
+            startGestures to endGestures
+        } else {
+            rememberTrackGestures(track, isLiked)
+        }
 
         val settings = LocalSwipeGestureSettings.current
         val handler = LocalSwipeActionHandler.current
-        val longPressAction = remember(settings, track) {
-            buildLongPressAction(settings, handler, track)
+        val longPressAction = remember(settings, track, startGestures, endGestures) {
+            if (startGestures != null && endGestures != null) null
+            else buildLongPressAction(settings, handler, track)
         }
 
         SwipeableRowWithGestures(

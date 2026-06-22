@@ -19,11 +19,6 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
-fun calculateVersionCode(): Int {
-    val date = LocalDate.now()
-    return (date.year - 2000) * 10000 + date.monthValue * 100 + date.dayOfMonth
-}
-
 val majorVersion = 1
 val minorVersion = 6
 val patchVersion = 3
@@ -68,8 +63,8 @@ extensions.configure<ApplicationExtension>("android") {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
-            isShrinkResources = false
+            isMinifyEnabled = true
+            isShrinkResources = true
 
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = if (

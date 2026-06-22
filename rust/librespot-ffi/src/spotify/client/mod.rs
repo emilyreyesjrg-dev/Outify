@@ -6,16 +6,15 @@ use std::{
 };
 use tokio::sync::RwLock;
 
-use crate::spotify::{
-    error::SpotifyApiError,
-    token::WebApiToken,
-};
+use crate::spotify::{error::SpotifyApiError, token::WebApiToken};
 
 mod auth;
 mod library;
 mod player;
 mod playlist;
 mod user;
+
+pub use library::SavedItemType;
 
 const SPOTIFY_API_URL: &str = "https://api.spotify.com";
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(5);

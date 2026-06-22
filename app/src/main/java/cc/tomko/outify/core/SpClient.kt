@@ -1,5 +1,6 @@
 package cc.tomko.outify.core
 
+import androidx.annotation.StringDef
 import cc.tomko.outify.core.model.DevicesResponse
 import cc.tomko.outify.data.metadata.NativeError
 import cc.tomko.outify.data.metadata.NativeErrorHandler
@@ -12,6 +13,13 @@ import javax.inject.Singleton
 class SpClient @Inject constructor() {
     companion object {
         private const val TAG = "SpClient"
+
+        const val TRACKS = "tracks"
+        const val ALBUMS = "albums"
+
+        @StringDef(TRACKS, ALBUMS)
+        @Retention(AnnotationRetention.SOURCE)
+        annotation class SavedItemType
     }
 
     /**
@@ -39,6 +47,11 @@ class SpClient @Inject constructor() {
      * Removes given uris from users library
      */
     external fun deleteItems(uris: Array<String>): Boolean
+
+    /**
+     * Get uris of items saved in users library
+     */
+    external fun getSavedItems(@SavedItemType itemType: String = TRACKS): String
 
     /**
      * Get the current user's top artists or tracks based on calculated affinity.

@@ -65,9 +65,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
+import cc.tomko.outify.core.model.Album
+import cc.tomko.outify.core.model.OutifyUri
 import cc.tomko.outify.core.model.Playlist
 import cc.tomko.outify.core.model.PlaylistFolder
 import cc.tomko.outify.core.model.toColor
@@ -80,19 +83,19 @@ import cc.tomko.outify.ui.components.bottomsheet.CreateFolderBottomSheet
 import cc.tomko.outify.ui.components.bottomsheet.MoveToFolderBottomSheet
 import cc.tomko.outify.ui.components.navigation.Route
 import cc.tomko.outify.ui.components.rememberCollapsingHeaderState
+import cc.tomko.outify.ui.components.rows.AlbumRow
 import cc.tomko.outify.ui.components.rows.PlaylistRow
 import cc.tomko.outify.ui.components.user.UserChipAvatar
 import cc.tomko.outify.ui.screens.MaterialSearchBar
+import cc.tomko.outify.ui.viewmodel.library.LibraryTab
 import cc.tomko.outify.ui.viewmodel.library.LibraryViewModel
 import kotlinx.coroutines.launch
 
 private sealed class LibraryItem {
     abstract val key: String
-
     data class FolderHeader(val folder: PlaylistFolder, val isExpanded: Boolean) : LibraryItem() {
         override val key get() = "folder:${folder.id}"
     }
-
     data class PlaylistRow(val playlist: Playlist, val folderId: String?) : LibraryItem() {
         override val key get() = "playlist:${playlist.uri}"
     }
@@ -106,9 +109,10 @@ fun SharedTransitionScope.LibraryScreen(
     modifier: Modifier = Modifier,
 ) {
     val libraryState by viewModel.libraryState.collectAsState()
+
     LaunchedEffect(Unit) { viewModel.loadPlaylistUris() }
 
-    if (libraryState.error != null && libraryState.playlists.isEmpty()) {
+    if (libraryState.error != null && libraryState.playlists.isEmpty() && libraryState.selectedTab == LibraryTab.Playlists) {
         ErrorScreen(
             message = libraryState.error!!,
             onRetry = { viewModel.retry() },
@@ -119,9 +123,9 @@ fun SharedTransitionScope.LibraryScreen(
 
     val density = LocalDensity.current
     var searchQuery by remember { mutableStateOf("") }
-
     val lazyListState = rememberLazyListState()
     val collapsingState = rememberCollapsingHeaderState()
+
     val atTop by remember {
         derivedStateOf {
             lazyListState.firstVisibleItemIndex == 0 &&
@@ -129,13 +133,14 @@ fun SharedTransitionScope.LibraryScreen(
         }
     }
     SideEffect { collapsingState.canExpand = atTop }
+
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val scope = rememberCoroutineScope()
 
     val isScrolled by remember {
         derivedStateOf {
-            lazyListState.firstVisibleItemIndex > 2 ||
-                    lazyListState.firstVisibleItemScrollOffset > 100
+            lazyListState.firstVisibleItemIndex > 1 ||
+                    lazyListState.firstVisibleItemScrollOffset > 50
         }
     }
     val showScrollToTop = isScrolled
@@ -148,11 +153,20 @@ fun SharedTransitionScope.LibraryScreen(
     var moveCurrentFolderId by remember { mutableStateOf<String?>(null) }
     var deleteFolderId by remember { mutableStateOf<String?>(null) }
 
-    val filteredPlaylists = remember(libraryState, searchQuery) {
+    val selectedTab = libraryState.selectedTab
+
+    val filteredPlaylists = remember(libraryState.playlists, searchQuery) {
         if (searchQuery.isBlank()) libraryState.playlists
         else libraryState.playlists.filter { p ->
             p.attributes.name.contains(searchQuery, ignoreCase = true) ||
                     p.ownerUsername.contains(searchQuery, ignoreCase = true)
+        }
+    }
+
+    val filteredAlbums = remember(libraryState.albums, searchQuery) {
+        if (searchQuery.isBlank()) libraryState.albums
+        else libraryState.albums.filter { a ->
+            a.name.contains(searchQuery, ignoreCase = true)
         }
     }
 
@@ -162,9 +176,8 @@ fun SharedTransitionScope.LibraryScreen(
 
     LaunchedEffect(lazyListState.isScrollInProgress) {
         if (!lazyListState.isScrollInProgress) {
-            val canExpand =
-                lazyListState.firstVisibleItemIndex == 0 &&
-                        lazyListState.firstVisibleItemScrollOffset == 0
+            val canExpand = lazyListState.firstVisibleItemIndex == 0 &&
+                    lazyListState.firstVisibleItemScrollOffset == 0
             collapsingState.snapIfNeeded(canExpand)
         }
     }
@@ -181,68 +194,134 @@ fun SharedTransitionScope.LibraryScreen(
 
         LazyColumn(
             state = lazyListState,
-            contentPadding = PaddingValues(top = topPadding),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            contentPadding = PaddingValues(top = topPadding, bottom = 80.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
             modifier = Modifier.fillMaxSize()
         ) {
-            item(key = "search_bar") {
-                Row(
+            item(key = "expressive_filter_bar") {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
                 ) {
+                    LibraryExpressiveFilters(
+                        selectedTab = selectedTab,
+                        onTabSelected = { viewModel.selectTab(it) }
+                    )
+
                     MaterialSearchBar(
                         query = searchQuery,
                         onQueryChange = { searchQuery = it },
                         isLoading = false,
                         autoFocus = false,
-                        placeholderText = "Search playlists..",
+                        placeholderText = if (selectedTab == LibraryTab.Playlists) "Search playlists..." else "Search albums...",
                     )
                 }
             }
 
-            items(
-                items = flatItems,
-                key = { it.key },
-                contentType = {
-                    when (it) {
-                        is LibraryItem.FolderHeader -> "folder_header"
-                        is LibraryItem.PlaylistRow -> if (it.folderId != null) "folder_playlist" else "unorg_playlist"
-                    }
-                }
-            ) { item ->
-                when (item) {
-                    is LibraryItem.FolderHeader -> {
-                        FolderHeaderContent(
-                            folder = item.folder,
-                            isExpanded = item.isExpanded,
-                            onToggleExpand = {
-                                expandedFolderIds = if (item.isExpanded)
-                                    expandedFolderIds - item.folder.id
-                                else
-                                    expandedFolderIds + item.folder.id
-                            },
-                            onEdit = { editingFolder = item.folder },
-                            onDelete = { deleteFolderId = item.folder.id },
-                        )
+            when (selectedTab) {
+                LibraryTab.Playlists -> {
+                    if (flatItems.isEmpty()) {
+                        item(key = "playlists_empty") {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (searchQuery.isBlank()) "Your playlist library is empty" else "No matching playlists found",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
 
-                    is LibraryItem.PlaylistRow -> {
-                        PlaylistRowContent(
-                            playlist = item.playlist,
-                            folderId = item.folderId,
-                            backStack = backStack,
-                            viewModel = viewModel,
-                            onMovePlaylist = { uri, fid ->
-                                movePlaylistUri = uri
-                                moveCurrentFolderId = fid
-                                showMoveToFolder = true
-                            },
-                        )
+                    items(
+                        items = flatItems,
+                        key = { it.key },
+                        contentType = {
+                            when (it) {
+                                is LibraryItem.FolderHeader -> "folder_header"
+                                is LibraryItem.PlaylistRow -> if (it.folderId != null) "folder_playlist" else "unorg_playlist"
+                            }
+                        }
+                    ) { item ->
+                        when (item) {
+                            is LibraryItem.FolderHeader -> {
+                                FolderHeaderContent(
+                                    folder = item.folder,
+                                    isExpanded = item.isExpanded,
+                                    onToggleExpand = {
+                                        expandedFolderIds = if (item.isExpanded)
+                                            expandedFolderIds - item.folder.id
+                                        else
+                                            expandedFolderIds + item.folder.id
+                                    },
+                                    onEdit = { editingFolder = item.folder },
+                                    onDelete = { deleteFolderId = item.folder.id },
+                                )
+                            }
+                            is LibraryItem.PlaylistRow -> {
+                                PlaylistRowContent(
+                                    playlist = item.playlist,
+                                    folderId = item.folderId,
+                                    backStack = backStack,
+                                    viewModel = viewModel,
+                                    onMovePlaylist = { uri, fid ->
+                                        movePlaylistUri = uri
+                                        moveCurrentFolderId = fid
+                                        showMoveToFolder = true
+                                    },
+                                )
+                            }
+                        }
                     }
                 }
+
+                LibraryTab.Albums -> {
+                    if (libraryState.isLoadingAlbums && filteredAlbums.isEmpty()) {
+                        item(key = "albums_loading") {
+                            Text(
+                                text = "Loading albums...",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+                            )
+                        }
+                    }
+
+                    if (!libraryState.isLoadingAlbums && filteredAlbums.isEmpty()) {
+                        item(key = "albums_empty") {
+                            Text(
+                                text = if (searchQuery.isBlank()) "No saved albums yet" else "No matching albums found",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+                            )
+                        }
+                    }
+
+                    items(
+                        items = filteredAlbums,
+                        key = { it.uri },
+                        contentType = { "album" }
+                    ) { album ->
+                        Box(modifier = Modifier.padding(horizontal = 4.dp)) {
+                            AlbumRow(
+                                album = album,
+                                artworkUrl = album.covers.firstOrNull()?.let { cover ->
+                                    "https://i.scdn.co/image/${cover.uri}"
+                                },
+                                onRowClick = {
+                                    backStack.add(Route.AlbumScreen(album.uri))
+                                },
+                                modifier = Modifier.animateItem(),
+                            )
+                        }
+                    }
+                }
+
+                else -> { /* Managed safety fallback for removed states */ }
             }
         }
 
@@ -267,12 +346,17 @@ fun SharedTransitionScope.LibraryScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Account • ${libraryState.playlists.count()} playlists",
+                    text = when (selectedTab) {
+                        LibraryTab.Playlists -> "Account • ${libraryState.playlists.count()} playlists"
+                        LibraryTab.Albums -> "Account • ${libraryState.albums.count()} albums"
+                        else -> "Account"
+                    },
                     style = MaterialTheme.typography.bodyMedium
                 )
             },
         )
 
+        // Expressive Actions (FABs) Layout Block
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.BottomEnd
@@ -299,68 +383,71 @@ fun SharedTransitionScope.LibraryScreen(
                     }
                 }
 
-                AnimatedVisibility(visible = fabExpanded) {
-                    FloatingActionButton(
-                        onClick = {
-                            fabExpanded = false
-                            GlobalPopupController.show(PopupSpec.CreatePlaylist())
-                        },
-                        shape = CircleShape,
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.PlaylistAdd,
-                            contentDescription = "Add playlist"
-                        )
+                if (selectedTab == LibraryTab.Playlists) {
+                    AnimatedVisibility(visible = fabExpanded) {
+                        FloatingActionButton(
+                            onClick = {
+                                fabExpanded = false
+                                GlobalPopupController.show(PopupSpec.CreatePlaylist())
+                            },
+                            shape = CircleShape,
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            modifier = Modifier.size(44.dp)
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.PlaylistAdd,
+                                contentDescription = "Add playlist"
+                            )
+                        }
                     }
-                }
 
-                AnimatedVisibility(visible = fabExpanded) {
-                    FloatingActionButton(
-                        onClick = {
-                            fabExpanded = false
-                            showCreateFolder = true
-                        },
-                        shape = CircleShape,
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.CreateNewFolder,
-                            contentDescription = "Add folder"
-                        )
+                    AnimatedVisibility(visible = fabExpanded) {
+                        FloatingActionButton(
+                            onClick = {
+                                fabExpanded = false
+                                showCreateFolder = true
+                            },
+                            shape = CircleShape,
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            modifier = Modifier.size(44.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.CreateNewFolder,
+                                contentDescription = "Add folder"
+                            )
+                        }
                     }
-                }
 
-                val cornerRadius by animateFloatAsState(
-                    targetValue = if (fabExpanded) 25f else 90f,
-                    animationSpec = tween(durationMillis = 250),
-                    label = "fab_corner"
-                )
-
-                FloatingActionButton(
-                    onClick = { fabExpanded = !fabExpanded },
-                    shape = RoundedCornerShape(cornerRadius),
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    val rotation by animateFloatAsState(
-                        targetValue = if (fabExpanded) 45f else 0f,
+                    val cornerRadius by animateFloatAsState(
+                        targetValue = if (fabExpanded) 20f else 28f,
                         animationSpec = tween(durationMillis = 250),
-                        label = "fab_rotation"
+                        label = "fab_corner"
                     )
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = if (fabExpanded) "Close menu" else "Add",
-                        modifier = Modifier.rotate(rotation)
-                    )
+
+                    FloatingActionButton(
+                        onClick = { fabExpanded = !fabExpanded },
+                        shape = RoundedCornerShape(cornerRadius.dp),
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(56.dp)
+                    ) {
+                        val rotation by animateFloatAsState(
+                            targetValue = if (fabExpanded) 45f else 0f,
+                            animationSpec = tween(durationMillis = 250),
+                            label = "fab_rotation"
+                        )
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = if (fabExpanded) "Close menu" else "Add item",
+                            modifier = Modifier.rotate(rotation)
+                        )
+                    }
                 }
             }
         }
     }
 
+    // Sheet / Dialog Overlays Management
     if (showCreateFolder || editingFolder != null) {
         val folder = editingFolder
         CreateFolderBottomSheet(
@@ -399,7 +486,7 @@ fun SharedTransitionScope.LibraryScreen(
             onDismissRequest = { deleteFolderId = null },
             title = { Text("Delete folder") },
             text = {
-                Text("Are you sure you want to delete \"${folder?.name}\"? Playlists inside will be unorganized.")
+                Text("Are you sure you want to delete \"${folder?.name}\"? Playlists inside will remain intact but unorganized.")
             },
             confirmButton = {
                 TextButton(onClick = {
@@ -418,6 +505,56 @@ fun SharedTransitionScope.LibraryScreen(
     }
 }
 
+/**
+ * Expressive Material 3 Filter Pills Layout
+ * Replaces old-style heavy structural tabs with casual, dynamic contextual selection tags.
+ */
+@Composable
+private fun LibraryExpressiveFilters(
+    selectedTab: LibraryTab,
+    onTabSelected: (LibraryTab) -> Unit,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        // Explicitly handle desired dynamic filters instead of full structural tabs loop
+        val allowedFilters = listOf(LibraryTab.Playlists, LibraryTab.Albums)
+
+        allowedFilters.forEach { tab ->
+            val isSelected = tab == selectedTab
+
+            val containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+            }
+
+            val contentColor = if (isSelected) {
+                MaterialTheme.colorScheme.onPrimary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
+
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(containerColor)
+                    .clickable { onTabSelected(tab) }
+                    .padding(horizontal = 20.dp, vertical = 10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = tab.name,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    color = contentColor
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun FolderHeaderContent(
     folder: PlaylistFolder,
@@ -427,33 +564,33 @@ private fun FolderHeaderContent(
     onDelete: () -> Unit,
 ) {
     val folderColor = folder.toColor()
-
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp),
     ) {
         Box(
             modifier = Modifier
-                .padding(start = 16.dp)
-                .size(56.dp)
-                .clip(RoundedCornerShape(6.dp))
+                .size(52.dp)
+                .clip(RoundedCornerShape(12.dp)) // Expressive modern radius
                 .background(folderColor),
             contentAlignment = Alignment.Center
         ) {
             Icon(Icons.Default.Folder, null, tint = Color.White, modifier = Modifier.size(24.dp))
         }
 
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(16.dp))
 
-        Column(Modifier
-            .weight(1f)
-            .clickable { onToggleExpand() }) {
+        Column(
+            Modifier
+                .weight(1f)
+                .clickable { onToggleExpand() }
+        ) {
             Text(
                 folder.name,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
             )
             Text(
                 "${folder.playlistIds.size} playlists",
@@ -462,27 +599,29 @@ private fun FolderHeaderContent(
             )
         }
 
-        IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+        IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
             Icon(
                 Icons.Default.Edit,
-                "Edit",
+                "Edit location",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
-        IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+
+        IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
             Icon(
                 Icons.Default.Delete,
-                "Delete",
+                "Remove row",
                 tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
 
         Icon(
-            if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-            if (isExpanded) "Collapse" else "Expand",
+            imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+            contentDescription = if (isExpanded) "Collapse" else "Expand",
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp)
         )
     }
 }
@@ -502,15 +641,15 @@ private fun PlaylistRowContent(
     val authors by produceState<List<cc.tomko.outify.core.model.Profile>>(
         emptyList(),
         playlist.uri
-    ) { value = viewModel.getAuthors(playlist).take(3) }
+    ) { value = viewModel.getAuthors(playlist).take(2) }
 
-    val startIndent = if (folderId != null) 24.dp else 0.dp
+    val startIndent = if (folderId != null) 32.dp else 12.dp
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = startIndent, end = 12.dp),
+            .padding(start = startIndent, end = 16.dp),
     ) {
         Box(modifier = Modifier.weight(1f)) {
             PlaylistRow(
@@ -519,18 +658,19 @@ private fun PlaylistRowContent(
                 onRowClick = { backStack.add(Route.PlaylistScreen(playlist.uri)) },
                 onRowLongClick = {
                     GlobalPopupController.show(
-                        PopupSpec.PlaylistInfo(
-                            playlist,
-                            artworkUrl
-                        )
+                        PopupSpec.PlaylistInfo(playlist, artworkUrl)
                     )
                 },
                 trailingContent = {
-                    authors.forEach { author ->
-                        UserChipAvatar(
-                            artworkUrl = author.imageUrl,
-                            modifier = Modifier.clickable { backStack.add(Route.ProfileScreen(author.uri)) },
-                        )
+                    Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
+                        authors.forEach { author ->
+                            UserChipAvatar(
+                                artworkUrl = author.imageUrl,
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clickable { backStack.add(Route.ProfileScreen(author.uri)) },
+                            )
+                        }
                     }
                 },
             )
@@ -538,13 +678,13 @@ private fun PlaylistRowContent(
 
         IconButton(
             onClick = { onMovePlaylist(playlist.uri, folderId) },
-            modifier = Modifier.size(32.dp)
+            modifier = Modifier.size(36.dp)
         ) {
             Icon(
                 Icons.Default.CreateNewFolder,
-                "Move",
+                "Reorganize item",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
     }
@@ -572,8 +712,5 @@ private fun buildFlatList(
     for (p in playlists) {
         if (p.uri !in organizedUris) items.add(LibraryItem.PlaylistRow(p, null))
     }
-
     return items
 }
-
-

@@ -7,12 +7,19 @@ import androidx.lifecycle.viewModelScope
 import cc.tomko.outify.core.SpClient
 import cc.tomko.outify.core.Spirc.SpircWrapper
 import cc.tomko.outify.core.UserProfile
+import cc.tomko.outify.core.model.Album
 import cc.tomko.outify.core.model.Playlist
 import cc.tomko.outify.core.model.PlaylistFolder
 import cc.tomko.outify.core.model.Profile
+import cc.tomko.outify.core.model.OutifyUri
+import cc.tomko.outify.core.model.Track
 import cc.tomko.outify.core.model.getCover
+import cc.tomko.outify.core.model.toSpotifyUri
+import cc.tomko.outify.data.database.toDomain
 import cc.tomko.outify.data.metadata.Metadata
+import cc.tomko.outify.data.repository.LikedRepository
 import cc.tomko.outify.data.repository.SettingsRepository
+import cc.tomko.outify.playback.PlaybackStateHolder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -29,15 +36,24 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
+enum class LibraryTab { Playlists, Albums }
+
 data class LibraryState(
     val playlists: List<Playlist> = emptyList(),
+    val albums: List<Album> = emptyList(),
+    val tracks: List<Track> = emptyList(),
     val folders: List<PlaylistFolder> = emptyList(),
+    val selectedTab: LibraryTab = LibraryTab.Playlists,
     val error: String? = null,
+    val isLoadingAlbums: Boolean = false,
+    val isLoadingTracks: Boolean = false,
 )
 
 @HiltViewModel
@@ -48,6 +64,8 @@ class LibraryViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val spClient: SpClient,
     private val spirc: SpircWrapper,
+    private val playbackStateHolder: PlaybackStateHolder,
+    private val likedRepository: LikedRepository,
 ) : ViewModel() {
 
     init {
@@ -62,6 +80,9 @@ class LibraryViewModel @Inject constructor(
     private val playlistUris = MutableStateFlow<List<String>>(emptyList())
     private var playlistsLoaded = false
 
+    private val albumUris = MutableStateFlow<List<String>>(emptyList())
+    private var albumsLoaded = false
+
     private val _authors = MutableStateFlow<Map<String, Profile>>(emptyMap())
     val authors: StateFlow<Map<String, Profile>> = _authors
     val isRefreshing = MutableStateFlow(false)
@@ -72,6 +93,19 @@ class LibraryViewModel @Inject constructor(
     private val foldersFlow = settingsRepository.folders
 
     private val _error = MutableStateFlow<String?>(null)
+    private val _selectedTab = MutableStateFlow(LibraryTab.Playlists)
+    val selectedTab: StateFlow<LibraryTab> = _selectedTab
+
+    private val _isLoadingAlbums = MutableStateFlow(false)
+    private val _isLoadingTracks = MutableStateFlow(false)
+
+    fun selectTab(tab: LibraryTab) {
+        _selectedTab.value = tab
+        when (tab) {
+            LibraryTab.Albums -> loadAlbumUris()
+            else -> {}
+        }
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     val playlists: StateFlow<List<Playlist>> =
@@ -90,15 +124,33 @@ class LibraryViewModel @Inject constructor(
                 emptyList()
             )
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val albums: StateFlow<List<Album>> =
+        albumUris
+            .flatMapLatest { uris ->
+                if (uris.isEmpty()) {
+                    flow { emit(emptyList()) }
+                } else {
+                    metadata.observeAlbums(uris)
+                }
+            }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                emptyList()
+            )
+
     val libraryState: StateFlow<LibraryState> = combine(
-        playlists,
-        foldersFlow,
-        _error,
-    ) { playlists, folders, error ->
+        listOf(playlists, albums, foldersFlow, _selectedTab, _error, _isLoadingAlbums, _isLoadingTracks)
+    ) { values ->
         LibraryState(
-            playlists = playlists,
-            folders = folders,
-            error = error,
+            playlists = values[0] as List<Playlist>,
+            albums = values[1] as List<Album>,
+            folders = values[2] as List<PlaylistFolder>,
+            selectedTab = values[3] as LibraryTab,
+            error = values[4] as String?,
+            isLoadingAlbums = values[5] as Boolean,
+            isLoadingTracks = values[6] as Boolean,
         )
     }.stateIn(
         viewModelScope,
@@ -137,6 +189,37 @@ class LibraryViewModel @Inject constructor(
 
             isRefreshing.value = false
         }
+    }
+
+    fun loadAlbumUris(force: Boolean = false) {
+        if (!force && albumsLoaded) return
+        viewModelScope.launch {
+            _isLoadingAlbums.value = true
+
+            runCatching {
+                val raw = spClient.getSavedItems(SpClient.ALBUMS)
+                raw.split(",").filter { it.isNotBlank() }
+            }.onSuccess { uris ->
+                albumUris.value = uris
+                albumsLoaded = true
+            }.onFailure { e ->
+                Log.w("LibraryViewModel", "Failed to fetch album URIs", e)
+            }
+
+            _isLoadingAlbums.value = false
+        }
+    }
+
+    val currentTrack: StateFlow<Track?> = playbackStateHolder.state
+        .map { it.currentTrack }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val isPlaying: StateFlow<Boolean> = playbackStateHolder.state
+        .map { it.isPlaying }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun load(track: Track) {
+        spirc.load(OutifyUri.Liked, track.toSpotifyUri())
     }
 
     fun loadHeaderArtwork(playlists: List<Playlist>) {
@@ -196,6 +279,7 @@ class LibraryViewModel @Inject constructor(
         artworkCache.clear()
         authorsCache.clear()
         loadPlaylistUris(force = true)
+        loadAlbumUris(force = true)
     }
 
     fun createFolder(folder: PlaylistFolder) {

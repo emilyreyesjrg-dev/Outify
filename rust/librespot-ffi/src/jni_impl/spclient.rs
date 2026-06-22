@@ -11,7 +11,7 @@ use crate::{
     jni_utils::{optionable_string, throw_exception, vec_to_jstring_array},
     outifyuri::OutifyUri,
     session::with_session,
-    spotify::client::get_client,
+    spotify::client::{SavedItemType, get_client},
 };
 
 #[unsafe(export_name = "Java_cc_tomko_outify_core_SpClient_username")]
@@ -203,6 +203,73 @@ pub extern "system" fn delete_items(
     }
 }
 
+#[unsafe(export_name = "Java_cc_tomko_outify_core_SpClient_getSavedItems")]
+pub extern "system" fn get_saved_items(
+    mut env: JNIEnv,
+    _class: JClass,
+    item_type: JString,
+) -> jstring {
+    let client = get_client();
+
+    let rt = match crate::TOKIO_RUNTIME.get() {
+        Some(r) => r,
+        None => {
+            error!("tokio runtime not available for get_saved_uris");
+            return std::ptr::null_mut();
+        }
+    };
+
+    let item_type_raw: String = match env.get_string(&item_type) {
+        Ok(s) => s.into(),
+        Err(e) => {
+            error!("jni get_string failed for item_type: {e}");
+            let _ = env.throw_new(
+                "java/lang/IllegalArgumentException",
+                format!("Invalid item_type: {e}"),
+            );
+            return std::ptr::null_mut();
+        }
+    };
+
+    let item_type: SavedItemType = match item_type_raw.parse() {
+        Ok(t) => t,
+        Err(e) => {
+            error!("invalid SavedItemType: {e}");
+            let _ = env.throw_new(
+                "java/lang/IllegalArgumentException",
+                "item_type must be 'tracks' or 'albums'",
+            );
+            return std::ptr::null_mut();
+        }
+    };
+
+    let result = match rt.block_on(client.get_saved(item_type)) {
+        Ok(items) => items
+            .items
+            .into_iter()
+            .map(|i| i.item.uri)
+            .collect::<Vec<_>>()
+            .join(","),
+
+        Err(e) => {
+            error!("get_saved_uris failed: {e}");
+            let _ = env.throw_new(
+                "java/io/RuntimeException",
+                format!("Spotify request failed: {e}"),
+            );
+            return std::ptr::null_mut();
+        }
+    };
+
+    match env.new_string(result) {
+        Ok(jni_str) => jni_str.into_raw(),
+        Err(e) => {
+            error!("jni new_string failed: {e}");
+            std::ptr::null_mut()
+        }
+    }
+}
+
 #[unsafe(export_name = "Java_cc_tomko_outify_core_SpClient_getUserTop")]
 pub extern "system" fn get_user_top(
     mut env: JNIEnv,
@@ -368,13 +435,11 @@ pub extern "system" fn get_oauth_scope(mut env: JNIEnv, _class: JClass) -> jstri
 
     let result = rt.block_on(async { client.get_scope().await });
     match result {
-        Some(scope) => {
-            match env.new_string(&scope) {
-                Ok(s) => s.into_raw(),
-                Err(e) => {
-                    error!("jni new_string failed for oauth scope: {e}");
-                    return std::ptr::null_mut();
-                },
+        Some(scope) => match env.new_string(&scope) {
+            Ok(s) => s.into_raw(),
+            Err(e) => {
+                error!("jni new_string failed for oauth scope: {e}");
+                return std::ptr::null_mut();
             }
         },
         None => std::ptr::null_mut(),
@@ -475,10 +540,7 @@ pub extern "system" fn delete_from_playlist(
         Ok(status) => {
             let success = status.is_success();
             if !success {
-                warn!(
-                    "delete_from_playlist returned {}",
-                    status.as_str()
-                );
+                warn!("delete_from_playlist returned {}", status.as_str());
             }
 
             success as jboolean

@@ -6,6 +6,7 @@ pub mod user;
 pub mod artist;
 pub mod track;
 pub mod album;
+pub mod library;
 
 pub use common::*;
 pub use pagination::Page;

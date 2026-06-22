@@ -24,6 +24,10 @@ fun calculateVersionCode(): Int {
     return (date.year - 2000) * 10000 + date.monthValue * 100 + date.dayOfMonth
 }
 
+val majorVersion = 1
+val minorVersion = 6
+val patchVersion = 3
+
 extensions.configure<ApplicationExtension>("android") {
     compileSdk = 36
     namespace = "cc.tomko.outify"
@@ -36,9 +40,9 @@ extensions.configure<ApplicationExtension>("android") {
         applicationId = "cc.tomko.outify"
         minSdk = 26
         targetSdk = 36
-        versionCode = calculateVersionCode()
-        versionName = (project.findProperty("versionName") ?: "dev") as String?
-    }
+        versionCode = majorVersion * 10_000 + minorVersion * 100 + patchVersion
+        versionName = "$majorVersion.$minorVersion.$patchVersion"
+			}
 
     signingConfigs {
         create("ciRelease") {
@@ -64,8 +68,8 @@ extensions.configure<ApplicationExtension>("android") {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
+            isShrinkResources = false
 
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = if (

@@ -8,6 +8,7 @@ pub mod metadata;
 pub mod oauth;
 pub mod session;
 pub mod spclient;
+pub mod types;
 pub mod spotify;
 pub mod outifyuri;
 

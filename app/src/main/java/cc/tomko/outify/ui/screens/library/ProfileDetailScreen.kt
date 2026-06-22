@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PersonAdd
@@ -26,8 +27,12 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -59,6 +64,24 @@ fun ProfileDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     val density = LocalDensity.current
     val collapsingState = rememberCollapsingHeaderState()
+    val lazyList = rememberLazyListState()
+    val atTop by remember {
+        derivedStateOf {
+            lazyList.firstVisibleItemIndex == 0 &&
+                    lazyList.firstVisibleItemScrollOffset == 0
+        }
+    }
+    SideEffect { collapsingState.canExpand = atTop }
+
+    LaunchedEffect(lazyList.isScrollInProgress) {
+        if (!lazyList.isScrollInProgress) {
+            val canExpand =
+                lazyList.firstVisibleItemIndex == 0 &&
+                        lazyList.firstVisibleItemScrollOffset == 0
+
+            collapsingState.snapIfNeeded(canExpand)
+        }
+    }
 
     when (val state = uiState) {
         is ProfileUiState.Loading -> {
@@ -87,6 +110,7 @@ fun ProfileDetailScreen(
                 val currentTopBarHeightDp = with(density) { collapsingState.height.value.toDp() }
 
                 LazyColumn(
+                    state = lazyList,
                     contentPadding = PaddingValues(top = currentTopBarHeightDp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier.fillMaxSize()

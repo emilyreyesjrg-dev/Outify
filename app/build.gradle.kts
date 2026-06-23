@@ -61,6 +61,11 @@ extensions.configure<ApplicationExtension>("android") {
         }
     }
 
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true

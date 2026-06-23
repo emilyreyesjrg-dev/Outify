@@ -7,7 +7,7 @@ Outify composes of these modules:
 For more information about the modules take a look at their docs.
 
 ### Prerequisites
-- [Rust toolchain (stable)](https://rustup.rs/)
+- [Rust toolchain (1.90.0)](https://rustup.rs/)
 - cargo-ndk
 ```bash
 cargo install cargo-ndk # Download
@@ -15,9 +15,9 @@ cargo ndk --version # Verify installation
 ````
 - Android SDK
     - including NDK, platform-tools
-- Android NDK
+- Android NDK (29.0.13113456 - r29)
     - Android Studio: SDK Manager -> SDK Tools -> NDK
-    - CLI: `sdkmanager "ndk;<version>"`
+    - CLI: `sdkmanager "ndk;29.0.13113456"`
 - Rust targets
     - `aarch64-linux-android`
     - `armv7-linux-androideabi`
@@ -25,17 +25,16 @@ cargo ndk --version # Verify installation
         - `rustup target add aarch64-linux-android`
         - `rustup target add armv7-linux-androideabi`
 - Environment variables set
-    - `ANDROID_SDK_ROOT`
-    - `ANDROID_NDK_HOME`
-    - `JAVA_HOME`
+    - `ANDROID_SDK_ROOT` - e.g. `/opt/android-sdk/`
+    - `ANDROID_NDK_HOME` - e.g. `/opt/android-ndk/`
+    - `JAVA_HOME` - e.g. `/usr/lib/jvm/java-21-openjdk`
 
 ### Building from source
 Prerequisites:
-- JDK17 in `$JAVA_HOME`
+- JDK21 in `$JAVA_HOME`
 - Gradle
-- Maven
 - Cargo (for librespot-ffi, librespot)
-- Linux/WSL - for `./buildLibrespot.sh`
+- Linux/WSL2 - for `./buildLibrespot.sh`
 
 When building from source, please clone the repository with submodules.
 ```bash

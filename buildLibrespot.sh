@@ -93,6 +93,7 @@ if [ ! -f "$TOOLCHAIN_TOML" ]; then
 fi
 PINNED_CHANNEL=$(grep -E '^channel\s*=' "$TOOLCHAIN_TOML" \
     | sed 's/.*=\s*"\(.*\)"/\1/')
+export RUSTUP_TOOLCHAIN="$PINNED_CHANNEL"
 echo "Rust toolchain (rust-toolchain.toml): $PINNED_CHANNEL"
 
 # Resolving Android NDK

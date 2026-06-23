@@ -316,6 +316,90 @@ fun PlaylistDetailSkeleton(
 }
 
 @Composable
+fun TrackDetailSkeleton(
+    modifier: Modifier = Modifier,
+    trackCount: Int = 1
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(top = 200.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item {
+            Box(
+                modifier = Modifier
+                    .padding(start = 16.dp, bottom = 8.dp)
+                    .fillMaxWidth(0.3f)
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .shimmerEffect()
+            )
+        }
+
+        items(trackCount) {
+            SkeletonTrackRow()
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(24.dp))
+            Box(
+                modifier = Modifier
+                    .padding(start = 16.dp, bottom = 8.dp)
+                    .fillMaxWidth(0.3f)
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .shimmerEffect()
+            )
+        }
+
+        items(4) {
+            Box(
+                modifier = Modifier
+                    .padding(start = 16.dp, bottom = 4.dp)
+                    .fillMaxWidth(0.9f)
+                    .height(14.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .shimmerEffect()
+            )
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(24.dp))
+            Box(
+                modifier = Modifier
+                    .padding(start = 16.dp, bottom = 8.dp)
+                    .fillMaxWidth(0.3f)
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .shimmerEffect()
+            )
+        }
+
+        items(2) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                SkeletonBox(
+                    modifier = Modifier.size(56.dp),
+                    shape = CircleShape
+                )
+
+                SkeletonBox(
+                    modifier = Modifier
+                        .fillMaxWidth(0.4f)
+                        .height(16.dp),
+                    shape = RoundedCornerShape(4.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun ProfileDetailSkeleton(
     modifier: Modifier = Modifier,
     playlistCount: Int = 4,

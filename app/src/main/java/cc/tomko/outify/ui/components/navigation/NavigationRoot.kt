@@ -144,6 +144,10 @@ fun SharedTransitionScope.NavigationRoot(
                     },
                     artistClick = { uri ->
                         backStack.add(Route.ArtistScreen(uri))
+                    },
+                    artworkClick = { album ->
+                        album ?: return@TrackDetailScreen
+                        backStack.add(Route.AlbumScreen(album.uri))
                     }
                 )
             }
@@ -164,6 +168,9 @@ fun SharedTransitionScope.NavigationRoot(
                     },
                     artistClick = { uri ->
                         backStack.add(Route.ArtistScreen(uri))
+                    },
+                    artworkClick = { uri ->
+                        backStack.add(Route.TrackScreen(uri))
                     }
                 )
             }
@@ -179,7 +186,12 @@ fun SharedTransitionScope.NavigationRoot(
                 ArtistDetailScreen(
                     viewModel,
                     onArtworkClick = { track ->
-                        backStack.add(Route.TrackScreen(track.uri))
+                        val albumUri = track.album?.uri
+                        if (albumUri != null) {
+                            backStack.add(Route.AlbumScreen(albumUri))
+                        } else {
+                            backStack.add(Route.TrackScreen(track.uri))
+                        }
                     },
                     onAlbumClick = { album ->
                         backStack.add(Route.AlbumScreen(album.uri))
@@ -204,7 +216,12 @@ fun SharedTransitionScope.NavigationRoot(
                         backStack.removeAt(backStack.lastIndex)
                     },
                     onArtworkClick = { track ->
-                        backStack.add(Route.TrackScreen(track.uri))
+                        val albumUri = track.album?.uri
+                        if (albumUri != null) {
+                            backStack.add(Route.AlbumScreen(albumUri))
+                        } else {
+                            backStack.add(Route.TrackScreen(track.uri))
+                        }
                     },
                     onArtistClick = { backStack.add(Route.ArtistScreen(it.uri)) },
                     onAuthorClick = {

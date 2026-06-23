@@ -53,7 +53,12 @@ fun GlobalPopupHost(
                     isLiked = popup.isLiked,
                     onDismiss = { GlobalPopupController.dismiss(popup.id) },
                     onArtworkClick = {
-                        backStack.add(Route.TrackScreen(popup.track.uri))
+                        val albumUri = popup.track.album?.uri
+                        if (albumUri != null) {
+                            backStack.add(Route.AlbumScreen(albumUri))
+                        } else {
+                            backStack.add(Route.TrackScreen(popup.track.uri))
+                        }
                         popup.action?.invoke()
                     },
                     onArtistClick = { artist ->
@@ -61,7 +66,12 @@ fun GlobalPopupHost(
                         popup.action?.invoke()
                     },
                     onOpenAlbum = {
-                        backStack.add(Route.TrackScreen(popup.track.uri))
+                        val albumUri = popup.track.album?.uri
+                        if (albumUri != null) {
+                            backStack.add(Route.AlbumScreen(albumUri))
+                        } else {
+                            backStack.add(Route.TrackScreen(popup.track.uri))
+                        }
                         popup.action?.invoke()
                     },
                     onOpenArtist = {

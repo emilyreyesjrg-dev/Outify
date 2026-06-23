@@ -451,7 +451,12 @@ class MainActivity : ComponentActivity() {
                                         backStack.add(Route.ArtistScreen(it.uri))
                                     },
                                     onArtworkClick = {
-                                        backStack.add(Route.TrackScreen(it.uri))
+                                        val albumUri = it.album?.uri
+                                        if (albumUri != null) {
+                                            backStack.add(Route.AlbumScreen(albumUri))
+                                        } else {
+                                            backStack.add(Route.TrackScreen(it.uri))
+                                        }
                                     },
                                     onDismissRequest = {
                                         sheetState.hide()

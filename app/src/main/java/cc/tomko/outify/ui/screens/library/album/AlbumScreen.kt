@@ -69,6 +69,7 @@ fun SharedTransitionScope.AlbumDetailScreen(
     viewModel: AlbumDetailViewModel,
     onBack: () -> Unit,
     artistClick: (uri: String) -> Unit,
+    artworkClick: (uri: String) -> Unit,
     highlightTrackUri: String? = null,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -192,6 +193,7 @@ fun SharedTransitionScope.AlbumDetailScreen(
                             },
                             isLiked = track.id in likedTracksId,
                             onArtistClick = { artistClick(it.uri) },
+                            onArtworkClick = { artworkClick(track.uri) }
                         )
                     }
                 }

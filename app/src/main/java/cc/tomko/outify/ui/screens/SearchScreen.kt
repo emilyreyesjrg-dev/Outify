@@ -282,7 +282,13 @@ fun SharedTransitionScope.SearchScreen(
                                     backStack.add(ArtistScreen(it.uri))
                                 },
                                 onArtworkClick = {
-                                    backStack.add(TrackScreen(item.uri))
+                                    val track = item.track
+                                    val albumUri = track.album?.uri
+                                    if (albumUri != null) {
+                                        backStack.add(Route.AlbumScreen(albumUri))
+                                    } else {
+                                        backStack.add(TrackScreen(track.uri))
+                                    }
                                 },
                                 trailingContent = removeButton,
                                 modifier = Modifier.animateItem()
@@ -475,7 +481,13 @@ fun SharedTransitionScope.SearchScreen(
                                     backStack.add(ArtistScreen(it.uri))
                                 },
                                 onArtworkClick = {
-                                    backStack.add(TrackScreen(item.uri))
+                                    val track = item.track
+                                    val albumUri = track.album?.uri
+                                    if (albumUri != null) {
+                                        backStack.add(Route.AlbumScreen(albumUri))
+                                    } else {
+                                        backStack.add(TrackScreen(track.uri))
+                                    }
                                 },
                                 modifier = Modifier.animateItem()
                             )

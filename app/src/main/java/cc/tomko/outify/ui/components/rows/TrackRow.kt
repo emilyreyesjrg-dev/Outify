@@ -214,7 +214,7 @@ fun TrackRow(
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier
                             .then(
-                                if (onArtistClick != null) {
+                                if (onArtworkClick != null) {
                                     Modifier.combinedClickable(
                                         onClick = { onArtworkClick?.invoke() },
                                         onLongClick = {}

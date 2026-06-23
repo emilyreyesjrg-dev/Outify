@@ -58,6 +58,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import cc.tomko.outify.ALBUM_COVER_URL
+import cc.tomko.outify.core.model.Album
 import cc.tomko.outify.core.model.Artist
 import cc.tomko.outify.core.model.CoverSize
 import cc.tomko.outify.core.model.SyncedLyric
@@ -80,6 +81,7 @@ fun SharedTransitionScope.TrackDetailScreen(
     viewModel: TrackDetailViewModel,
     onBack: () -> Unit,
     artistClick: (uri: String) -> Unit,
+    artworkClick: (album: Album?) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -175,6 +177,7 @@ fun SharedTransitionScope.TrackDetailScreen(
                             },
                             isLiked = track.id in likedTrackIds,
                             onArtistClick = { artistClick(it.uri) },
+                            onArtworkClick = { artworkClick(track.album) },
                         )
                     }
 

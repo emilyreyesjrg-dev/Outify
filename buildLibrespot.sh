@@ -120,6 +120,11 @@ export CC_armv7_linux_androideabi="$TOOLCHAIN/armv7a-linux-androideabi${PLATFORM
 export AR_aarch64_linux_android="$TOOLCHAIN/llvm-ar"
 export AR_armv7_linux_androideabi="$TOOLCHAIN/llvm-ar"
 
+export RUSTFLAGS="\
+	--remap-path-prefix $PROJECT_ROOT=/build/outify \
+	--remap-path-prefix $HOME/.cargo=/cargo"
+
+echo "Using JDK	: $JDK21_HOME"
 echo "Using ANDROID_NDK : $ANDROID_NDK  (NDK $NDK_VERSION)"
 echo "Using CC (arm64)  : $CC_aarch64_linux_android"
 echo "Using CC (armv7)  : $CC_armv7_linux_androideabi"

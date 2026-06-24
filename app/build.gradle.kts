@@ -72,15 +72,13 @@ extensions.configure<ApplicationExtension>("android") {
             isShrinkResources = true
 
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = if (
+            if (
                 !System.getenv("ANDROID_KEYSTORE_FILE").isNullOrBlank() &&
                 !System.getenv("ANDROID_KEYSTORE_PASSWORD").isNullOrBlank() &&
                 !System.getenv("ANDROID_KEY_ALIAS").isNullOrBlank() &&
                 !System.getenv("ANDROID_KEY_PASSWORD").isNullOrBlank()
             ) {
-                signingConfigs.getByName("ciRelease")
-            } else {
-                signingConfigs.getByName("debug")
+                signingConfig = signingConfigs.getByName("ciRelease")
             }
         }
 

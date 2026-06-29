@@ -120,11 +120,42 @@ fun AccountsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "Why two logins?",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = "Outify uses librespot to stream audio. librespot authenticates with Spotify's streaming protocol using anonymous credentials — it operates independently of your Spotify account and cannot access your personal data.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = "Your Spotify account login is separate and handled via OAuth. It grants access to your library, playlists, and social features — but is not involved in audio streaming.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            item {
                 ElevatedCard(
                     modifier = modifier.fillMaxWidth(),
                 ) {
                     PreferenceEntry(
                         title = { Text("Playback login") },
+                        description = "librespot · anonymous streaming credentials",
                         icon = {
                             if (isPlaybackLoggedIn) {
                                 Icon(
@@ -154,12 +185,12 @@ fun AccountsScreen(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = "This login is mandatory to allow for playback.",
+                            text = "Required for audio streaming.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
-                            text = "It uses fake Spotify credentials to stream audio.",
+                            text = "Uses anonymous credentials embedded in librespot to authenticate with Spotify's streaming protocol. Not linked to your personal Spotify account.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -252,6 +283,7 @@ fun AccountsScreen(
                         } else {
                             PreferenceEntry(
                                 title = { Text("Account login") },
+                                description = "Your Spotify account · OAuth",
                                 icon = {
                                     Icon(
                                         Icons.AutoMirrored.Filled.Login,
@@ -270,7 +302,7 @@ fun AccountsScreen(
                                 verticalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Text(
-                                    text = "This login allows for manipulation of your Spotify account.",
+                                    text = "Your real Spotify account, connected via OAuth.",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )

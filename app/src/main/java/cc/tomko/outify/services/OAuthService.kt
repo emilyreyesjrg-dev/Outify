@@ -10,8 +10,15 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import cc.tomko.outify.R
+import cc.tomko.outify.core.AuthCallbackServerManager
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class OAuthService : Service() {
+
+    @Inject
+    lateinit var serverManager: AuthCallbackServerManager
 
     companion object {
         const val CHANNEL_ID = "oauth_service_channel"
@@ -38,17 +45,15 @@ class OAuthService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Authentication",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "Keeps authentication running"
-            }
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(channel)
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            "Authentication",
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            description = "Keeps authentication running"
         }
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(channel)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -59,35 +64,8 @@ class OAuthService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        serverManager.stop()
         stopForeground(STOP_FOREGROUND_REMOVE)
         super.onDestroy()
-    }
-}
-
-object PendingAuthHelper {
-    private const val PREFS_NAME = "auth_pending"
-    private const val KEY_CODE = "code"
-    private const val KEY_STATE = "state"
-
-    fun savePendingAuth(context: Context, code: String, state: String?) {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .putString(KEY_CODE, code)
-            .putString(KEY_STATE, state ?: "")
-            .apply()
-    }
-
-    fun getPendingAuth(context: Context): Pair<String, String?>? {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val code = prefs.getString(KEY_CODE, null) ?: return null
-        val state = prefs.getString(KEY_STATE, null)?.takeIf { it.isNotEmpty() }
-        return Pair(code, state)
-    }
-
-    fun clearPendingAuth(context: Context) {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .clear()
-            .apply()
     }
 }

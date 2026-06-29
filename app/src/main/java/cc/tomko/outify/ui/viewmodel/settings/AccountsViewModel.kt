@@ -5,7 +5,7 @@ import android.content.Intent
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import cc.tomko.outify.core.AuthCallbackServer
+import cc.tomko.outify.core.AuthCallbackServerManager
 import cc.tomko.outify.core.AuthManager
 import cc.tomko.outify.core.AuthStateEventBus
 import cc.tomko.outify.core.SpClient
@@ -34,8 +34,8 @@ class AccountsViewModel @Inject constructor(
     val authManager: AuthManager,
     private val spircController: SpircController,
     private val settingsRepository: SettingsRepository,
+    private val serverManager: AuthCallbackServerManager,
 ) : ViewModel() {
-    private var server: AuthCallbackServer? = null
     private val json = Json { ignoreUnknownKeys = true }
 
     private val _isPlaybackLoggedIn = MutableStateFlow(false)
@@ -61,6 +61,11 @@ class AccountsViewModel @Inject constructor(
         loadSavedUserProfile()
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        serverManager.stop()
+    }
+
     fun checkAuthState() {
         _isAccountLoggedIn.value = spClient.isOAuthAuthenticated()
         _isPlaybackLoggedIn.value = authManager.hasCachedCredentials()
@@ -77,9 +82,8 @@ class AccountsViewModel @Inject constructor(
 
     fun startSpircAuth(context: Context) {
         OAuthService.start(context)
-        server?.stop()
 
-        server = AuthCallbackServer(onCodeReceived = { code, state ->
+        serverManager.start(onCodeReceived = { code, state ->
             OAuthService.stop(context)
             val result = authManager.handleOAuthCode(code, state)
             val isSuccess = result.contains("\"success\":true")
@@ -90,11 +94,11 @@ class AccountsViewModel @Inject constructor(
             GlobalPopupController.show(PopupSpec.AuthResult(isSuccess, errorDetails = errorDetails))
             if (isSuccess) {
                 _isPlaybackLoggedIn.value = authManager.hasCachedCredentials()
+                checkAuthState()
                 AuthStateEventBus.tryEmitPlaybackLoggedIn()
                 spircController.restart()
             }
         })
-        server?.start()
 
         val url = authManager.getAuthorizationURL()
 
@@ -105,9 +109,8 @@ class AccountsViewModel @Inject constructor(
 
     fun startAccountAuth(context: Context) {
         OAuthService.start(context)
-        server?.stop()
 
-        server = AuthCallbackServer(onCodeReceived = { code, state ->
+        serverManager.start(onCodeReceived = { code, state ->
             OAuthService.stop(context)
             val result = spClient.completeOAuthFlow(code)
             val isSuccess = result.contains("\"success\":true")
@@ -125,6 +128,7 @@ class AccountsViewModel @Inject constructor(
                         authenticated = spClient.isOAuthAuthenticated()
                     }
                     _isAccountLoggedIn.value = authenticated
+                    checkAuthState()
                     AuthStateEventBus.tryEmitAccountLoggedIn()
                     if (authenticated) {
                         fetchProfile()
@@ -132,8 +136,6 @@ class AccountsViewModel @Inject constructor(
                 }
             }
         })
-
-        server?.start()
 
         val url = spClient.startOAuthFlow()
 
@@ -154,6 +156,7 @@ class AccountsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 settingsRepository.removeUserProfile()
+                _scopes.value = emptyList()
             } catch (e: Exception) {
             }
         }

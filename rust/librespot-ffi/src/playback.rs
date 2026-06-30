@@ -169,3 +169,27 @@ pub extern "system" fn Java_cc_tomko_outify_playback_AudioEngine_registerPcmCall
     AndroidSink::set_callback(rust_pcm_trampoline);
     info!("pcm callback registered");
 }
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_cc_tomko_outify_playback_AudioEngine_unregisterPcmCallback(
+    _env: JNIEnv,
+    _class: JObject,
+) {
+    if let Some(mutex) = PCM_CALLBACK.get() {
+        if let Ok(mut guard) = mutex.lock() {
+            if let Some(global) = guard.take() {
+                drop(global);
+            }
+        }
+    }
+
+    if let Some(mutex) = BUFFER_GLOBAL.get() {
+        if let Ok(mut guard) = mutex.lock() {
+            if let Some(global) = guard.take() {
+                drop(global);
+            }
+        }
+    }
+
+    info!("pcm callback unregistered");
+}

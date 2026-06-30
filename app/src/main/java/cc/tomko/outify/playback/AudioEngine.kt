@@ -191,6 +191,15 @@ class AudioEngine(
         }
     }
 
+    /**
+     * Releases native resources — frees JNI GlobalRefs for PCM callback
+     * and player event listener.
+     */
+    fun releaseNative() {
+        unregisterPcmCallback()
+        unregisterPlayerEventListener()
+    }
+
     fun pause() {
         writeLock.withLock {
             audioTrack?.let {
@@ -268,4 +277,14 @@ class AudioEngine(
      * FFI stores the GlobalRef of the callback
      */
     external fun registerPlayerEventListener(callback: PlayerEventCallback);
+
+    /**
+     * Unregisters the PCM callback, freeing its JNI GlobalRef
+     */
+    private external fun unregisterPcmCallback()
+
+    /**
+     * Unregisters the player event listener, freeing its JNI GlobalRef
+     */
+    private external fun unregisterPlayerEventListener()
 }

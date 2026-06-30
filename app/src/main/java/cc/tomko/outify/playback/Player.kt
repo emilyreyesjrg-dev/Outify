@@ -261,7 +261,7 @@ class Player @Inject constructor(
 
     public override fun handleRelease(): ListenableFuture<*> {
         engine.releaseAudioTrack()
-        // TODO: tell spirc to cleanup
+        engine.releaseNative()
         return com.google.common.util.concurrent.Futures.immediateVoidFuture()
     }
 

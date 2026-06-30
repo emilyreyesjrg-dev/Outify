@@ -4,9 +4,8 @@ use jni::{
     JNIEnv,
     objects::{GlobalRef, JClass, JObject},
 };
-use once_cell::sync::OnceCell;
 
-pub static PLAYER_EVENT_LISTENER: OnceCell<Mutex<GlobalRef>> = OnceCell::new();
+pub static PLAYER_EVENT_LISTENER: Mutex<Option<GlobalRef>> = Mutex::new(None);
 
 // Registers the track update callback and stores its GlobalRef
 #[unsafe(no_mangle)]
@@ -15,8 +14,25 @@ pub extern "system" fn Java_cc_tomko_outify_playback_AudioEngine_registerPlayerE
     _this: JClass,
     callback: JObject,
 ) {
-    let jvm = crate::JVM.get().unwrap();
+    let global = match env.new_global_ref(callback) {
+        Ok(g) => g,
+        Err(e) => {
+            error!("jni new_global_ref failed for player event listener: {e}");
+            return;
+        }
+    };
 
-    let global = env.new_global_ref(callback).unwrap();
-    PLAYER_EVENT_LISTENER.set(Mutex::new(global)).ok();
+    let mut guard = PLAYER_EVENT_LISTENER.lock().unwrap();
+    *guard = Some(global);
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_cc_tomko_outify_playback_AudioEngine_unregisterPlayerEventListener(
+    _env: JNIEnv,
+    _this: JClass,
+) {
+    let mut guard = PLAYER_EVENT_LISTENER.lock().unwrap();
+    if let Some(global) = guard.take() {
+        drop(global);
+    }
 }

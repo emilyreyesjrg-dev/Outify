@@ -190,6 +190,15 @@ pub fn set_session_callback(global: GlobalRef) {
     }
 }
 
+pub fn unregister_session_callback() {
+    if let Some(lock) = SESSION_CALLBACK.get() {
+        let mut guard = lock.write().unwrap();
+        if let Some(global) = guard.take() {
+            drop(global);
+        }
+    }
+}
+
 async fn cleanup() {
     if let Some(lock) = SESSION.get() {
         let mut guard = lock.write().unwrap();

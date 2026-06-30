@@ -53,3 +53,11 @@ pub extern "system" fn Java_cc_tomko_outify_core_Session_shutdown(
     with_session(|session| session.shutdown());
     1
 }
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_cc_tomko_outify_core_Session_unregisterSessionCallback(
+    _env: JNIEnv,
+    _this: JClass,
+) {
+    crate::session::unregister_session_callback();
+}

@@ -11,6 +11,8 @@ class Session @Inject constructor() {
     external fun initializeSession(callback: SessionCallback)
 
     external fun shutdown(): Boolean
+
+    external fun unregisterSessionCallback()
 }
 
 interface SessionCallback {

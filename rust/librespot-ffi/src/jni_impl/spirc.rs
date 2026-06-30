@@ -96,6 +96,22 @@ pub extern "system" fn shutdown(env: JNIEnv, _this: JClass) {
     crate::spirc::shutdown()
 }
 
+#[unsafe(export_name = "Java_cc_tomko_outify_core_spirc_Spirc_unregisterBufferCallback")]
+pub extern "system" fn unregister_buffer_callback(_env: JNIEnv, _this: JClass) {
+    let mut lock = BUFFER_CALLBACK.lock().unwrap();
+    if let Some(global) = lock.take() {
+        drop(global);
+    }
+}
+
+#[unsafe(export_name = "Java_cc_tomko_outify_core_spirc_Spirc_unregisterDeviceCallback")]
+pub extern "system" fn unregister_device_callback(_env: JNIEnv, _this: JClass) {
+    let mut lock = DEVICE_CALLBACK.lock().unwrap();
+    if let Some(global) = lock.take() {
+        drop(global);
+    }
+}
+
 // Sets the buffer callback, so we can notify UI of spirc buferring
 #[unsafe(export_name = "Java_cc_tomko_outify_core_spirc_Spirc_bufferCallback")]
 pub extern "system" fn set_buffer_callback(

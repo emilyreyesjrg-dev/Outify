@@ -66,6 +66,18 @@ object Spirc {
     external fun shutdown()
 
     /**
+     * Unregisters the buffer callback, freeing its JNI GlobalRef
+     */
+    @JvmStatic
+    external fun unregisterBufferCallback()
+
+    /**
+     * Unregisters the device callback, freeing its JNI GlobalRef
+     */
+    @JvmStatic
+    external fun unregisterDeviceCallback()
+
+    /**
      * Sets the buffer callback for spirc
      */
     @JvmStatic

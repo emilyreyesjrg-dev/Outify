@@ -19,16 +19,15 @@ pub fn on_player_track_update(track_id: SpotifyUri) {
         }
     };
 
-    let listener_ref: GlobalRef = match crate::jni_impl::playback::PLAYER_EVENT_LISTENER.get() {
-        Some(cell) => {
-            let guard = cell.lock().unwrap();
-            guard.clone()
-        }
+    let guard = crate::jni_impl::playback::PLAYER_EVENT_LISTENER.lock().unwrap();
+    let listener_ref: GlobalRef = match &*guard {
+        Some(r) => r.clone(),
         None => {
             error!("listener not set for on_player_track_update");
             return;
         }
     };
+    drop(guard);
 
     tokio::spawn({
         let session = match with_session(|s| s.clone()) {
@@ -114,16 +113,15 @@ pub fn on_player_position_update(position_ms: u32, track_id: SpotifyUri) {
         }
     };
 
-    let listener_ref: GlobalRef = match crate::jni_impl::playback::PLAYER_EVENT_LISTENER.get() {
-        Some(cell) => {
-            let guard = cell.lock().unwrap();
-            guard.clone()
-        }
+    let guard = crate::jni_impl::playback::PLAYER_EVENT_LISTENER.lock().unwrap();
+    let listener_ref: GlobalRef = match &*guard {
+        Some(r) => r.clone(),
         None => {
             error!("listener not set for on_player_position_update");
             return;
         }
     };
+    drop(guard);
 
     tokio::spawn({
         let session = match with_session(|s| s.clone()) {
@@ -214,16 +212,15 @@ pub fn on_player_status(playing: bool) {
         }
     };
 
-    let listener_ref: GlobalRef = match crate::jni_impl::playback::PLAYER_EVENT_LISTENER.get() {
-        Some(cell) => {
-            let guard = cell.lock().unwrap();
-            guard.clone()
-        }
+    let guard = crate::jni_impl::playback::PLAYER_EVENT_LISTENER.lock().unwrap();
+    let listener_ref: GlobalRef = match &*guard {
+        Some(r) => r.clone(),
         None => {
             error!("listener not set for on_player_status");
             return;
         }
     };
+    drop(guard);
 
     let session = match crate::session::SESSION.get() {
         Some(s) => s,

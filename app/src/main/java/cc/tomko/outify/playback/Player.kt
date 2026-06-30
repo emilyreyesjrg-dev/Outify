@@ -48,6 +48,7 @@ class Player @Inject constructor(
 ) : SimpleBasePlayer(application.mainLooper) {
 
     private val scope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
+    @Volatile
     var currentArtworkBitmap: Bitmap? = null
     private var currentArtworkBytes: ByteArray? = null
     private var currentArtworkUri: String? = null

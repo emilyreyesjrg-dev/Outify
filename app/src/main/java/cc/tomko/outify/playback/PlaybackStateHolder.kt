@@ -8,6 +8,7 @@ import cc.tomko.outify.playback.model.RepeatMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
@@ -28,14 +29,16 @@ class PlaybackStateHolder @Inject constructor() {
 
     fun setQueue(queue: List<Track>, startIndex: Int = 0) {
         val track = queue.getOrNull(startIndex)
-        _state.value = _state.value.copy(
-            queue = queue,
-            queueIndex = startIndex,
-            currentTrack = track,
-            position = PositionInfo.EMPTY.copy(
-                lastSync = System.currentTimeMillis()
+        _state.update {
+            it.copy(
+                queue = queue,
+                queueIndex = startIndex,
+                currentTrack = track,
+                position = PositionInfo.EMPTY.copy(
+                    lastSync = System.currentTimeMillis()
+                )
             )
-        )
+        }
     }
 
     suspend fun play() {
@@ -87,10 +90,10 @@ class PlaybackStateHolder @Inject constructor() {
     }
 
     fun setTrack(track: Track?) {
-        if (_state.value.currentTrack?.id == track?.id) return
-        _state.value = _state.value.copy(
-            currentTrack = track
-        )
+        _state.update { current ->
+            if (current.currentTrack?.id == track?.id) current
+            else current.copy(currentTrack = track)
+        }
     }
 
     suspend fun setPlaying(playing: Boolean) {
@@ -100,20 +103,20 @@ class PlaybackStateHolder @Inject constructor() {
     }
 
     fun setBuffering(buffering: Boolean) {
-        _state.value = _state.value.copy(isBuffering = buffering)
+        _state.update { it.copy(isBuffering = buffering) }
     }
 
 
     fun setActiveDevice(active: Boolean) {
-        _state.value = _state.value.copy(isActiveDevice = active)
+        _state.update { it.copy(isActiveDevice = active) }
     }
 
     fun setVolume(volume: Int) {
-        _state.value = _state.value.copy(volume = volume)
+        _state.update { it.copy(volume = volume) }
     }
 
     fun reset() {
-        _state.value = PlaybackState()
+        _state.update { PlaybackState() }
     }
 
     private fun computePositionLocked(): Duration {

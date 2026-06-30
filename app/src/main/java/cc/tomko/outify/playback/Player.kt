@@ -50,7 +50,9 @@ class Player @Inject constructor(
     private val scope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
     @Volatile
     var currentArtworkBitmap: Bitmap? = null
+    @Volatile
     private var currentArtworkBytes: ByteArray? = null
+    @Volatile
     private var currentArtworkUri: String? = null
 
     private var artworkJob: Job? = null

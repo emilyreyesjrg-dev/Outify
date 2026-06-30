@@ -25,10 +25,6 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import dagger.hilt.android.qualifiers.ApplicationContext
 import jakarta.inject.Inject
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.plus
 
 @UnstableApi
 class MediaLibrarySessionCallback @Inject constructor(
@@ -37,7 +33,6 @@ class MediaLibrarySessionCallback @Inject constructor(
     private val spircController: SpircController,
 ) : MediaLibraryService.MediaLibrarySession.Callback {
 
-    private val scope = CoroutineScope(Dispatchers.Main) + Job()
     lateinit var service: PlaybackService
     var toggleLike: () -> Unit = {}
     var toggleStartRadio: () -> Unit = {}

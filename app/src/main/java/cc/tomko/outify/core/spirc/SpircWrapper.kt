@@ -18,6 +18,7 @@ import cc.tomko.outify.services.PlaybackService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -38,7 +39,7 @@ class SpircWrapper @Inject constructor(
     private val json: Json,
 ) : ISpircWrapper {
     val scope = CoroutineScope(
-        Dispatchers.Main.immediate
+        Dispatchers.Main.immediate + SupervisorJob()
     )
 
     private var restartCallback: (() -> Unit)? = null

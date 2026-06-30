@@ -112,6 +112,10 @@ class PlaybackStateHolder @Inject constructor() {
         _state.value = _state.value.copy(volume = volume)
     }
 
+    fun reset() {
+        _state.value = PlaybackState()
+    }
+
     private fun computePositionLocked(): Duration {
         val cur = _state.value
         if (!cur.isPlaying) return cur.position.active

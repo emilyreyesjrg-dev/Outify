@@ -59,7 +59,12 @@ class Player @Inject constructor(
 
             override fun onTrackChange(spotify_uri: String, json_str: String) {
                 scope.launch {
-                    val track: Track = json.decodeFromString(json_str)
+                    val track: Track = try {
+                        json.decodeFromString(json_str)
+                    } catch (e: Exception) {
+                        Log.w("Player", "Failed to decode track JSON", e)
+                        return@launch
+                    }
                     stateHolder.setTrack(track)
 
                     val cover = track.album?.getCover(CoverSize.LARGE)

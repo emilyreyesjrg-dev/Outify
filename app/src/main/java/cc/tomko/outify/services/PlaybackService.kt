@@ -1,9 +1,13 @@
 package cc.tomko.outify.services
 
 import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.media.AudioManager
 import android.os.Binder
 import android.util.Log
@@ -68,18 +72,23 @@ class PlaybackService : MediaLibraryService(),
         const val CHANNEL_NAME = "Media Playback"
 
         val TAG = PlaybackService::class.simpleName.toString()
+
+        val AUDIO_ATTRIBUTES: AudioAttributes = AudioAttributes.Builder().apply {
+            setUsage(C.USAGE_MEDIA)
+            setContentType(AUDIO_CONTENT_TYPE_MUSIC)
+        }.build()
     }
 
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
             CHANNEL_NAME,
-            android.app.NotificationManager.IMPORTANCE_LOW
+            NotificationManager.IMPORTANCE_LOW
         ).apply {
             description = "Media playback controls"
             setShowBadge(false)
         }
-        val notificationManager = getSystemService(android.app.NotificationManager::class.java)
+        val notificationManager = getSystemService(NotificationManager::class.java)
         notificationManager.createNotificationChannel(channel)
     }
 
@@ -114,13 +123,12 @@ class PlaybackService : MediaLibraryService(),
     private var keepAlive: Boolean = true
     private val binder = MusicBinder()
 
-    private val attributes = AudioAttributes.Builder().apply {
-        setUsage(C.USAGE_MEDIA)
-        setContentType(AUDIO_CONTENT_TYPE_MUSIC)
-    }.build()
-
-    private lateinit var audioFocusManager: CustomAudioFocusManager
-    private var isMusicPausedByFocusLoss = false
+    private val becomingNoisyListener = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if(intent.action != AudioManager.ACTION_AUDIO_BECOMING_NOISY) return
+            if(player.playWhenReady) player.pause()
+        }
+    }
 
     override fun onGetSession(controller: MediaSession.ControllerInfo): MediaLibrarySession? {
         return mediaLibrarySession
@@ -129,6 +137,8 @@ class PlaybackService : MediaLibraryService(),
     override fun onCreate() {
         Log.i(TAG, "Starting PlaybackService")
         super.onCreate()
+
+        player.setAudioAttributes(AUDIO_ATTRIBUTES, true)
 
         createNotificationChannel()
 
@@ -192,31 +202,10 @@ class PlaybackService : MediaLibraryService(),
             }
         )
 
-        audioFocusManager = CustomAudioFocusManager(applicationContext) { state ->
-            when (state) {
-                AudioManager.AUDIOFOCUS_GAIN -> {
-                    if (isMusicPausedByFocusLoss) {
-                        player.play()
-                        isMusicPausedByFocusLoss = false
-                    }
-                }
-
-                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                    if (player.playWhenReady) {
-                        player.pause()
-                        isMusicPausedByFocusLoss = true
-                    }
-                }
-
-                AudioManager.AUDIOFOCUS_LOSS -> {
-                    if (player.playWhenReady) {
-                        player.pause()
-                        isMusicPausedByFocusLoss = true
-                    }
-                }
-            }
-        }
-        audioFocusManager.setupAudioFocusRequest()
+        registerReceiver(
+            becomingNoisyListener,
+            IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+        )
     }
 
     fun toggleLike() {
@@ -346,6 +335,8 @@ class PlaybackService : MediaLibraryService(),
         }
         scope.cancel()
         offloadScope.cancel()
+        unregisterReceiver(becomingNoisyListener)
+
         super.onDestroy()
 
         Log.i(TAG, "Terminated PlaybackService")

@@ -1,6 +1,7 @@
 package cc.tomko.outify.playback
 
 import android.app.Application
+import android.media.AudioFocusRequest
 import androidx.core.graphics.scale
 import androidx.core.net.toUri
 import androidx.media3.common.C
@@ -9,6 +10,7 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.SimpleBasePlayer
+import androidx.media3.common.audio.AudioFocusManager
 import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import cc.tomko.outify.ALBUM_COVER_URL
@@ -18,11 +20,13 @@ import cc.tomko.outify.core.model.Track
 import cc.tomko.outify.core.model.getCover
 import cc.tomko.outify.playback.callbacks.PlayerEventCallback
 import cc.tomko.outify.playback.model.PlayState
+import cc.tomko.outify.services.PlaybackService
 import coil3.Bitmap
 import coil3.ImageLoader
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.toBitmap
+import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -164,6 +168,39 @@ class Player @Inject constructor(
             }
         })
 
+    private val audioFocusManager = AudioFocusManager(
+        application.applicationContext,
+        application.mainLooper,
+        object : AudioFocusManager.PlayerControl {
+            override fun setVolumeMultiplier(volume: Float) {
+                Log.i("Player", "Volume changed to $volume")
+            }
+
+            override fun executePlayerCommand(command: Int) {
+                scope.launch {
+                    when (command) {
+                        AudioFocusManager.PLAYER_COMMAND_WAIT_FOR_CALLBACK,
+                        AudioFocusManager.PLAYER_COMMAND_DO_NOT_PLAY -> {
+                            spirc.playerPause()
+                            stateHolder.setPlaying(false)
+                            invalidateState()
+                        }
+
+                        AudioFocusManager.PLAYER_COMMAND_PLAY_WHEN_READY -> {
+                            spirc.playerPlay()
+                            stateHolder.setPlaying(true)
+                            invalidateState()
+                        }
+                    }
+                }
+            }
+        }
+    )
+
+    init {
+        audioFocusManager.setAudioAttributes(PlaybackService.AUDIO_ATTRIBUTES)
+    }
+
     override fun getState(): State {
         val ps = stateHolder.state.value
         val track = ps.currentTrack ?: return State.Builder()
@@ -211,6 +248,7 @@ class Player @Inject constructor(
         }
 
         return State.Builder()
+            .setAudioAttributes(PlaybackService.AUDIO_ATTRIBUTES)
             .setPlaybackState(playbackState)
             .setAvailableCommands(determineCommands())
             .setPlayWhenReady(ps.isPlaying, PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST)
@@ -223,13 +261,21 @@ class Player @Inject constructor(
     }
 
     override fun handleSetPlayWhenReady(playWhenReady: Boolean): ListenableFuture<*> {
-        // TODO: More robust handling?
-        if (playWhenReady) {
-            spirc.playerPlay()
-        } else {
-            spirc.playerPause()
+        val currentMedia3State = if (stateHolder.state.value.currentTrack == null) STATE_IDLE else STATE_READY
+
+        val playerCommand = audioFocusManager.updateAudioFocus(playWhenReady, currentMedia3State)
+
+        when (playerCommand) {
+            AudioFocusManager.PLAYER_COMMAND_PLAY_WHEN_READY -> {
+                if (playWhenReady) spirc.playerPlay() else spirc.playerPause()
+            }
+
+            AudioFocusManager.PLAYER_COMMAND_DO_NOT_PLAY,
+            AudioFocusManager.PLAYER_COMMAND_WAIT_FOR_CALLBACK -> {
+                spirc.playerPause()
+            }
         }
-        return com.google.common.util.concurrent.Futures.immediateVoidFuture()
+        return Futures.immediateVoidFuture()
     }
 
     override fun handleSeek(
@@ -251,43 +297,47 @@ class Player @Inject constructor(
                 }
             }
         }
-        return com.google.common.util.concurrent.Futures.immediateVoidFuture()
+        return Futures.immediateVoidFuture()
     }
 
     override fun handleStop(): ListenableFuture<*> {
         spirc.playerPause() //TODO: Implement playerStop
-        return com.google.common.util.concurrent.Futures.immediateVoidFuture()
+        audioFocusManager.updateAudioFocus(false, STATE_IDLE)
+        return Futures.immediateVoidFuture()
     }
 
-    public override fun handleRelease(): ListenableFuture<*> {
-        engine.releaseAudioTrack()
-        engine.releaseNative()
-        return com.google.common.util.concurrent.Futures.immediateVoidFuture()
-    }
-
+    // TODO: Handle repeat mode
     override fun handleSetRepeatMode(repeatMode: Int): ListenableFuture<*> {
 //        spirc.setRepeatMode(when (repeatMode) {
 //            Player.REPEAT_MODE_ONE -> RepeatMode.ONE
 //            Player.REPEAT_MODE_ALL -> RepeatMode.ALL
 //            else -> RepeatMode.NONE
 //        })
-        return com.google.common.util.concurrent.Futures.immediateVoidFuture()
+        return Futures.immediateVoidFuture()
     }
 
     override fun handleSetShuffleModeEnabled(shuffleModeEnabled: Boolean): ListenableFuture<*> {
         spirc.shuffle(shuffleModeEnabled)
-        return com.google.common.util.concurrent.Futures.immediateVoidFuture()
+        return Futures.immediateVoidFuture()
     }
 
     override fun handleSetPlaybackParameters(playbackParameters: PlaybackParameters): ListenableFuture<*> {
 //        spirc.setPlaybackSpeed(playbackParameters.speed)
-        return com.google.common.util.concurrent.Futures.immediateVoidFuture()
+        return Futures.immediateVoidFuture()
     }
 
     override fun handlePrepare(): ListenableFuture<*> {
         spirc.ensureUsable()
 
         return super.handlePrepare()
+    }
+
+    public override fun handleRelease(): ListenableFuture<*> {
+        engine.releaseAudioTrack()
+        engine.releaseNative()
+
+        audioFocusManager.release()
+        return Futures.immediateVoidFuture()
     }
 
     private fun determineCommands(): Player.Commands {

@@ -90,6 +90,8 @@ fun SharedTransitionScope.QueueBottomSheet(
     val currentTrack by viewModel.currentTrack.collectAsState(initial = null)
     val likedTracksId by viewModel.likedTrackIds.collectAsState()
 
+    val flipQueueGestures by viewModel.flipQueueGestures.collectAsState()
+
     val activeQueueId by multiQueueViewModel.activeQueueId.collectAsState()
     val savedQueues by multiQueueViewModel.queues.collectAsState()
     val activeQueueName = remember(activeQueueId, savedQueues) {
@@ -358,42 +360,43 @@ fun SharedTransitionScope.QueueBottomSheet(
                                             )
                                         }
 
+                                        val playNextGesture = listOf(
+                                            SwipeGesture(
+                                                thresholdFraction = 0.25f,
+                                                icon = { Icon(Icons.Default.MoveUp, contentDescription = null) },
+                                                onTrigger = {
+                                                    val currentUri = currentTrack?.uri
+                                                    val mutable = localTracks.toMutableList()
+                                                    mutable.remove(item)
+                                                    val currentIdx = mutable.indexOfFirst { it.track.uri == currentUri }
+                                                    val insertAt = (currentIdx + 1).coerceIn(0, mutable.size)
+                                                    mutable.add(insertAt, item)
+                                                    val newCurrentIdx = mutable.indexOfFirst { it.track.uri == currentUri }
+                                                        .coerceAtLeast(0)
+                                                    viewModel.setQueueEntries(mutable, newCurrentIdx)
+                                                    viewModel.debouncedSaveToRepository(mutable)
+                                                }
+                                            ),
+                                        )
+                                        val removeFromQueueGesture = listOf(
+                                            SwipeGesture(
+                                                thresholdFraction = 0.25f,
+                                                icon = { Icon(Icons.Default.RemoveCircle, contentDescription = null) },
+                                                onTrigger = {
+                                                    val currentUri = currentTrack?.uri
+                                                    val mutable = localTracks.toMutableList()
+                                                    mutable.remove(item)
+                                                    val newCurrentIdx = mutable.indexOfFirst { it.track.uri == currentUri }
+                                                        .coerceAtLeast(0)
+                                                    viewModel.setQueueEntries(mutable, newCurrentIdx)
+                                                    viewModel.debouncedSaveToRepository(mutable)
+                                                }
+                                            )
+                                        )
+
                                         SwipeableTrackRowConfigured(
-                                            startGestures = listOf(
-                                                // Play next
-                                                SwipeGesture(
-                                                    thresholdFraction = 0.25f,
-                                                    icon = { Icon(Icons.Default.MoveUp, contentDescription = null) },
-                                                    onTrigger = {
-                                                        val currentUri = currentTrack?.uri
-                                                        val mutable = localTracks.toMutableList()
-                                                        mutable.remove(item)
-                                                        val currentIdx = mutable.indexOfFirst { it.track.uri == currentUri }
-                                                        val insertAt = (currentIdx + 1).coerceIn(0, mutable.size)
-                                                        mutable.add(insertAt, item)
-                                                        val newCurrentIdx = mutable.indexOfFirst { it.track.uri == currentUri }
-                                                            .coerceAtLeast(0)
-                                                        viewModel.setQueueEntries(mutable, newCurrentIdx)
-                                                        viewModel.debouncedSaveToRepository(mutable)
-                                                    }
-                                                ),
-                                            ),
-                                            endGestures = listOf(
-                                                // Remove from queue
-                                                SwipeGesture(
-                                                    thresholdFraction = 0.25f,
-                                                    icon = { Icon(Icons.Default.RemoveCircle, contentDescription = null) },
-                                                    onTrigger = {
-                                                        val currentUri = currentTrack?.uri
-                                                        val mutable = localTracks.toMutableList()
-                                                        mutable.remove(item)
-                                                        val newCurrentIdx = mutable.indexOfFirst { it.track.uri == currentUri }
-                                                            .coerceAtLeast(0)
-                                                        viewModel.setQueueEntries(mutable, newCurrentIdx)
-                                                        viewModel.debouncedSaveToRepository(mutable)
-                                                    }
-                                                )
-                                            ),
+                                            startGestures = if(flipQueueGestures) removeFromQueueGesture else playNextGesture,
+                                            endGestures = if(flipQueueGestures) playNextGesture else removeFromQueueGesture,
                                             track = item.track,
                                             currentTrack = currentTrack,
                                             isPlaybackPlaying = isPlaybackPlaying,

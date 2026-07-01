@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Flip
 import androidx.compose.material.icons.filled.Gesture
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material3.ElevatedCard
@@ -53,6 +54,7 @@ fun SharedTransitionScope.GestureSettingsScreen(
     modifier: Modifier = Modifier
 ) {
     val gestures by viewModel.gestures.collectAsState()
+    val flipQueueGestures by viewModel.flipQueueGestures.collectAsState()
     val swipeEnabled by viewModel.swipeEnabled.collectAsState()
     val scope = rememberCoroutineScope()
 
@@ -79,6 +81,21 @@ fun SharedTransitionScope.GestureSettingsScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            item {
+                ElevatedCard(
+                    modifier = modifier
+                        .fillMaxWidth()
+                ) {
+                    SwitchPreferenceEntry(
+                        title = { Text("Flip queue gestures") },
+                        description = "Right swipe to play next, left swipe to delete",
+                        icon = { Icon(Icons.Default.Flip, contentDescription = null) },
+                        onCheckedChange = { viewModel.setFlipQueueGestures(it) },
+                        isChecked = flipQueueGestures
+                    )
+                }
+            }
+
             item {
                 ElevatedCard(
                     modifier = modifier

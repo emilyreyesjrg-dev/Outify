@@ -53,6 +53,7 @@ class SettingsRepository @Inject constructor(
 
         object Gesture {
             val ENABLED = booleanPreferencesKey("gestures_enabled")
+            val FLIP_QUEUE = booleanPreferencesKey("flip_queue_gestures")
             val GESTURES = stringPreferencesKey("gestures_json")
         }
 
@@ -123,12 +124,14 @@ class SettingsRepository @Inject constructor(
 
     val interfaceSettings: Flow<InterfaceSettings> = dataStore.data.map { prefs ->
         val enabled = prefs[Keys.Gesture.ENABLED] ?: true
+        val flipQueueGestures = prefs[Keys.Gesture.FLIP_QUEUE] ?: true
 
         val monochrome = prefs[Keys.Interface.MONOCHROME_IMAGES] ?: false
         val accentColor = prefs[Keys.Interface.ACCENT_COLOR] ?: Color.Cyan.toArgb().toLong()
 
         InterfaceSettings(
             swipeGesturesEnabled = enabled,
+            flipQueueGestures = flipQueueGestures,
             gestureSettings = if (enabled) decodeGestures(prefs[Keys.Gesture.GESTURES]) else emptyList(),
 
             // Dynamic theme
@@ -294,6 +297,10 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setGesturesEnabled(enabled: Boolean) {
         dataStore.edit { it[Keys.Gesture.ENABLED] = enabled }
+    }
+
+    suspend fun setFlipQueueGestures(enabled: Boolean) {
+        dataStore.edit { it[Keys.Gesture.FLIP_QUEUE] = enabled }
     }
 
     suspend fun saveLastPlayback(trackUri: String?, contextUri: String?, positionMs: Long?) {
@@ -515,6 +522,7 @@ class SettingsRepository @Inject constructor(
 
 data class InterfaceSettings(
     val swipeGesturesEnabled: Boolean = true,
+    val flipQueueGestures: Boolean = false,
     // Default gestures
     val gestureSettings: List<GestureSetting> = listOf(
         GestureSetting(

@@ -8,6 +8,7 @@ import cc.tomko.outify.data.dao.LikedDao
 import cc.tomko.outify.data.metadata.Metadata
 import cc.tomko.outify.data.queue.SavedQueue
 import cc.tomko.outify.data.repository.SavedQueueRepository
+import cc.tomko.outify.data.repository.SettingsRepository
 import cc.tomko.outify.playback.PlaybackStateHolder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -39,6 +40,7 @@ class QueueViewModel @Inject constructor(
     val spirc: SpircWrapper,
     private val likedDao: LikedDao,
     private val savedQueueRepository: SavedQueueRepository,
+    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
     val currentTrack: StateFlow<Track?> = playbackStateHolder.state
@@ -49,6 +51,10 @@ class QueueViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = null
         )
+
+    val flipQueueGestures: StateFlow<Boolean> = settingsRepository.interfaceSettings
+        .map { it.flipQueueGestures }
+        .stateIn(viewModelScope, SharingStarted.Lazily, false)
 
     val isPlaying: StateFlow<Boolean> = playbackStateHolder.state
         .map { it.isPlaying }

@@ -17,6 +17,10 @@ import javax.inject.Inject
 class GestureSettingViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
+    val flipQueueGestures = settingsRepository.interfaceSettings
+        .map { it.flipQueueGestures }
+        .stateIn(viewModelScope, SharingStarted.Lazily, true)
+
     val swipeEnabled = settingsRepository.interfaceSettings
         .map { it.swipeGesturesEnabled }
         .stateIn(viewModelScope, SharingStarted.Lazily, true)
@@ -30,6 +34,12 @@ class GestureSettingViewModel @Inject constructor(
     fun setGesturesEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setGesturesEnabled(enabled)
+        }
+    }
+
+    fun setFlipQueueGestures(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setFlipQueueGestures(enabled)
         }
     }
 

@@ -24,6 +24,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import cc.tomko.outify.reccobeats.PendingRecommendation
 import cc.tomko.outify.ui.screens.HomeScreen
 import cc.tomko.outify.ui.screens.SearchScreen
 import cc.tomko.outify.ui.screens.library.LibraryScreen
@@ -126,6 +127,21 @@ fun SharedTransitionScope.NavigationRoot(
             entry<Route.SearchScreen> {
                 val viewModel = hiltViewModel<SearchViewModel>()
                 SearchScreen(backStack, viewModel)
+            }
+
+            entry<Route.RecommendationsScreen> {
+                val viewModel = hiltViewModel<SearchViewModel>()
+                LaunchedEffect(Unit) {
+                    val pending = PendingRecommendation
+                    val seedIds = pending.seedIds
+                    val config = pending.config
+                    if (seedIds != null && config != null) {
+                        viewModel.fetchRecommendations(seedIds, config)
+                    }
+                    pending.seedIds = null
+                    pending.config = null
+                }
+                SearchScreen(backStack, viewModel, showSearchUi = false)
             }
 
             entry<Route.TrackScreen> {

@@ -16,6 +16,8 @@ import cc.tomko.outify.data.metadata.Metadata
 import cc.tomko.outify.data.repository.SearchRepository
 import cc.tomko.outify.data.repository.SettingsRepository
 import cc.tomko.outify.playback.PlaybackStateHolder
+import cc.tomko.outify.reccobeats.RecommendationConfig
+import cc.tomko.outify.reccobeats.Recommendations
 import cc.tomko.outify.ui.model.search.SearchHistoryItem
 import cc.tomko.outify.ui.model.search.SearchResultType
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -43,6 +45,7 @@ class SearchViewModel @Inject constructor(
     private val repository: SearchRepository,
     private val playbackStateHolder: PlaybackStateHolder,
     private val settingsRepository: SettingsRepository,
+    private val recommendations: Recommendations,
 ) : ViewModel() {
     private val queryFlow = MutableStateFlow("")
 
@@ -54,6 +57,9 @@ class SearchViewModel @Inject constructor(
 
     private val _isLoggedIn = MutableStateFlow(false)
     val isLoggedIn: StateFlow<Boolean> = _isLoggedIn
+
+    private val _isRecommendationMode = MutableStateFlow(false)
+    val isRecommendationMode: StateFlow<Boolean> = _isRecommendationMode
 
     val currentTrack: StateFlow<Track?> = playbackStateHolder.state
         .map { it.currentTrack }
@@ -250,6 +256,28 @@ class SearchViewModel @Inject constructor(
 
     fun onQueryChange(query: String) {
         queryFlow.value = query
+    }
+
+    fun fetchRecommendations(seedIds: List<String>, config: RecommendationConfig) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val trackIds = recommendations.fetchRecommendations(50, seedIds.toTypedArray(), config)
+            if (trackIds.isEmpty()) {
+                _isLoading.value = false
+                return@launch
+            }
+            val uris = trackIds.map { "spotify:track:$it" }
+            val tracks = withContext(Dispatchers.IO) {
+                metadata.getTrackMetadata(uris)
+            }
+            loadTrackResults(tracks)
+        }
+    }
+
+    fun loadTrackResults(tracks: List<Track>) {
+        _results.value = tracks.map { SearchUiModel.TrackItem(it.uri, it) }
+        _isRecommendationMode.value = true
+        _isLoading.value = false
     }
 
     suspend fun getArtworkUrl(playlist: Playlist): String? {

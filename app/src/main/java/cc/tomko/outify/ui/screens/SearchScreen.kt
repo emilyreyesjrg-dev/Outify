@@ -29,7 +29,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Login
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -102,7 +104,8 @@ import kotlinx.coroutines.launch
 fun SharedTransitionScope.SearchScreen(
     backStack: NavBackStack<NavKey>,
     viewModel: SearchViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showSearchUi: Boolean = true,
 ) {
     val results by viewModel.results.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -165,50 +168,118 @@ fun SharedTransitionScope.SearchScreen(
             modifier = Modifier
                 .fillMaxWidth()
         ) {
-            item {
-                Text(
-                    text = "Search",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .padding(start = 24.dp, end = 24.dp, top = 16.dp),
-                )
-            }
+            if (!showSearchUi) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = {
+                            backStack.removeAt(backStack.lastIndex)
+                        }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        }
 
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    MaterialSearchBar(
-                        query = query,
-                        onQueryChange = { newQuery ->
-                            query = newQuery
-                            viewModel.onQueryChange(newQuery)
-                        },
-                        isLoading = isLoading,
-                        modifier = Modifier.weight(1f)
-                    )
-                    IconButton(onClick = { showAdvancedSheet = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Tune,
-                            contentDescription = "Advanced search",
-                            tint = MaterialTheme.colorScheme.onSurface
+                        Text(
+                            text = "Recommendations",
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.Bold,
                         )
+                    }
+                }
+
+                if (isLoading) {
+                    item {
+                        repeat(5) {
+                            SkeletonTrackRow()
+                        }
+                    }
+                } else {
+                    items(
+                        items = results,
+                        key = { it.uri }
+                    ) { item ->
+                        when (item) {
+                            is SearchUiModel.TrackItem -> {
+                                val track = item.track
+                                SwipeableTrackRowConfigured(
+                                    track = track,
+                                    currentTrack = currentTrack,
+                                    isPlaybackPlaying = isPlaybackPlaying,
+                                    onRowClick = remember(track.uri) {
+                                        {
+                                            spirc.load(track.toSpotifyUri())
+                                            viewModel.setTrack(track)
+                                        }
+                                    },
+                                    onArtistClick = {
+                                        backStack.add(ArtistScreen(it.uri))
+                                    },
+                                    onArtworkClick = {
+                                        val albumUri = track.album?.uri
+                                        if (albumUri != null) {
+                                            backStack.add(Route.AlbumScreen(albumUri))
+                                        } else {
+                                            backStack.add(TrackScreen(track.uri))
+                                        }
+                                    },
+                                    modifier = Modifier.animateItem()
+                                )
+                            }
+                            else -> {}
+                        }
                     }
                 }
             }
 
-            if (query.isBlank() && searchHistory.isEmpty()) {
+            if (showSearchUi) {
                 item {
-                    Box(
+                    Text(
+                        text = "Search",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .padding(start = 24.dp, end = 24.dp, top = 16.dp),
+                    )
+                }
+
+                item {
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(min = 400.dp),
-                        contentAlignment = Alignment.Center
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
+                        MaterialSearchBar(
+                            query = query,
+                            onQueryChange = { newQuery ->
+                                query = newQuery
+                                viewModel.onQueryChange(newQuery)
+                            },
+                            isLoading = isLoading,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = { showAdvancedSheet = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Tune,
+                                contentDescription = "Advanced search",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (showSearchUi) {
+                if (query.isBlank() && searchHistory.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 400.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
@@ -556,6 +627,7 @@ fun SharedTransitionScope.SearchScreen(
                         }
                     }
                 }
+            }
             }
         }
 

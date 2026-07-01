@@ -20,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -80,6 +81,7 @@ fun TrackInfoBottomSheet(
     onPlayNext: (() -> Unit)? = null,
     onAddToPlaylist: (() -> Unit)? = null,
     onToggleLike: (() -> Unit)? = null,
+    onUseAsRecommendationSeed: (() -> Unit)? = null,
     onStartRadio: (() -> Unit)? = null,
     onOpenRadio: (() -> Unit)? = null,
     onShare: (() -> Unit)? = null,
@@ -351,6 +353,16 @@ fun TrackInfoBottomSheet(
                     highlightColor = MaterialTheme.colorScheme.primaryContainer
                 )
             }
+
+            ActionCard(
+                icon = Icons.Default.AutoAwesome,
+                title = "Use as Recommendation Seed",
+                subtitle = "Discover tracks using this song",
+                onClick = {
+                    onUseAsRecommendationSeed?.invoke()
+                    onDismiss()
+                }
+            )
 
             ActionCard(
                 icon = Icons.Default.Radio,

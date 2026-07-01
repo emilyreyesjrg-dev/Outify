@@ -18,7 +18,9 @@ import cc.tomko.outify.ui.components.bottomsheet.AuthResultBottomSheet
 import cc.tomko.outify.ui.components.bottomsheet.CreatePlaylistBottomSheet
 import cc.tomko.outify.ui.components.bottomsheet.PlaybackDevicesBottomSheet
 import cc.tomko.outify.ui.components.bottomsheet.PlaylistInfoBottomSheet
+import cc.tomko.outify.ui.components.bottomsheet.RecommendationConfigBottomSheet
 import cc.tomko.outify.ui.components.bottomsheet.TrackInfoBottomSheet
+import cc.tomko.outify.reccobeats.PendingRecommendation
 import cc.tomko.outify.ui.components.navigation.Route
 import cc.tomko.outify.ui.viewmodel.bottomsheet.AddToPlaylistViewModel
 import cc.tomko.outify.ui.viewmodel.bottomsheet.AddToWidgetViewModel
@@ -83,6 +85,11 @@ fun GlobalPopupHost(
                     onAddToPlaylist = { addToPlaylist(popup.track) },
                     onToggleLike = { toggleLike(popup.track.toOutifyUri()) },
                     onStartRadio = { startRadio(popup.track) },
+                    onUseAsRecommendationSeed = {
+                        scope.launch {
+                            GlobalPopupController.show(PopupSpec.TrackRecommendation(listOf(popup.track)))
+                        }
+                    },
                     onOpenRadio = {
                         openRadio(popup.track)
                         popup.action?.invoke()
@@ -103,6 +110,19 @@ fun GlobalPopupHost(
                             GlobalPopupController.show(PopupSpec.AddToWidgetInfo(popup.track))
                         }
                     }
+                )
+            }
+
+            is PopupSpec.TrackRecommendation -> {
+                RecommendationConfigBottomSheet(
+                    seeds = popup.seed,
+                    onSubmit = { config ->
+                        PendingRecommendation.config = config
+                        PendingRecommendation.seedIds = popup.seed.map { it.id }
+                        GlobalPopupController.dismiss(popup.id)
+                        backStack.add(Route.RecommendationsScreen)
+                    },
+                    onDismiss = { GlobalPopupController.dismiss(popup.id) },
                 )
             }
 

@@ -16,7 +16,7 @@ use librespot_playback::{
 };
 use once_cell::sync::OnceCell;
 use thiserror::Error;
-use tokio::{sync::mpsc, task::JoinHandle};
+use tokio::sync::mpsc;
 
 use crate::session::with_session;
 
@@ -65,7 +65,6 @@ pub fn init_spirc_container() {
 
 pub struct SpircRuntime {
     spirc: Arc<Spirc>,
-    task: Mutex<Option<JoinHandle<()>>>,
 }
 
 impl SpircRuntime {
@@ -121,7 +120,7 @@ impl SpircRuntime {
         )
         .await?;
 
-        let task = tokio::spawn(spirc_future);
+        let _ = tokio::spawn(spirc_future);
 
         // Handling received Player Events
         tokio::spawn(async move {
@@ -145,7 +144,6 @@ impl SpircRuntime {
 
         Ok(Self {
             spirc: Arc::new(spirc),
-            task: Mutex::new(Some(task)),
         })
     }
 
@@ -242,7 +240,7 @@ impl SpircRuntime {
     }
 
     pub fn shutdown(&self) {
-        self.spirc.shutdown();
+        let _ = self.spirc.shutdown();
     }
 
     pub fn shuffle(&self, enabled: bool) -> Result<(), librespot_core::Error> {
@@ -430,10 +428,10 @@ fn handle_event(event: PlayerEvent) {
             notify_device_state(is_now_active);
         }
 
-        PlayerEvent::SessionConnected { connection_id, user_name } => {
+        PlayerEvent::SessionConnected { connection_id: _, user_name: _ } => {
             notify_device_state(true);
         }
-        PlayerEvent::SessionDisconnected { connection_id, user_name } => {
+        PlayerEvent::SessionDisconnected { connection_id: _, user_name: _ } => {
             notify_device_state(false);
         }
         PlayerEvent::VolumeChanged { volume } => {
@@ -632,7 +630,7 @@ pub fn current_track() -> Option<String> {
 }
 
 pub fn shutdown() {
-    with_spirc(|spirc| {
+    let _ = with_spirc(|spirc| {
         spirc.shutdown();
     });
 

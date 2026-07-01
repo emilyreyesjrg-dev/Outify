@@ -85,6 +85,7 @@ macro_rules! complete_future_exception {
     }};
 }
 
+#[allow(unused)]
 pub(crate) fn spawn_background<F>(job: F)
 where
     F: FnOnce() + Send + 'static,

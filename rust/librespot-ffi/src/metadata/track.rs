@@ -1,5 +1,3 @@
-
-use librespot_core::SpotifyUri;
 use librespot_metadata::{
     Album, Artist, Track,
     image::Image,

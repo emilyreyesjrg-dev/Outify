@@ -4,7 +4,6 @@ use jni::{
     sys::{jboolean, jint, jobjectArray, jstring},
 };
 use librespot_core::{SpotifyId, SpotifyUri};
-use librespot_metadata::Metadata;
 use regex::Regex;
 
 use crate::{
@@ -673,8 +672,6 @@ pub extern "system" fn Java_cc_tomko_outify_core_SpClient_searchContext(
     mut env: JNIEnv,
     _class: JClass,
     query: JString,
-    pages: jint,
-    page_offset: jint,
 ) -> jstring {
     let rt = match crate::TOKIO_RUNTIME.get() {
         Some(r) => r,
@@ -691,9 +688,6 @@ pub extern "system" fn Java_cc_tomko_outify_core_SpClient_searchContext(
             return std::ptr::null_mut();
         }
     };
-
-    let page_offset = page_offset as usize;
-    let pages = pages as usize;
 
     let json_res = rt.block_on(async {
         let uri = format!("spotify:search:{}", query);
@@ -1042,7 +1036,7 @@ pub extern "system" fn complete_oauth_flow(
     let result = rt.block_on(async { client.complete_oauth_flow(code).await });
 
     match result {
-        Ok(token) => {
+        Ok(_) => {
             debug!("oauth flow completed via jni");
             spclient_make_success_json(&env)
         }

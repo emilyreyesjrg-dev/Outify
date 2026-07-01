@@ -92,7 +92,7 @@ pub extern "system" fn Java_cc_tomko_outify_core_spirc_Spirc_initializeSpirc(
 }
 
 #[unsafe(export_name = "Java_cc_tomko_outify_core_spirc_Spirc_shutdown")]
-pub extern "system" fn shutdown(env: JNIEnv, _this: JClass) {
+pub extern "system" fn shutdown(_env: JNIEnv, _this: JClass) {
     crate::spirc::shutdown()
 }
 
@@ -119,16 +119,6 @@ pub extern "system" fn set_buffer_callback(
     _this: JClass,
     callback: JObject,
 ) -> jboolean {
-    let rt = match crate::TOKIO_RUNTIME.get() {
-        Some(rt) => rt,
-        None => {
-            error!("tokio runtime not available for buffer_callback");
-            return 0;
-        }
-    };
-
-    let handle = rt.handle().clone();
-
     let global_callback = match env.new_global_ref(callback) {
         Ok(g) => g,
         Err(e) => {
@@ -215,7 +205,8 @@ pub extern "system" fn shuffle_load(mut env: JNIEnv, _this: JClass, juri: JStrin
 }
 
 #[unsafe(export_name = "Java_cc_tomko_outify_core_spirc_Spirc_localLoad")]
-pub extern "system" fn local_load(env: JNIEnv, _this: JClass, juri: JString) -> jboolean {
+pub extern "system" fn local_load(_env: JNIEnv, _this: JClass, _juri: JString) -> jboolean {
+    error!("Using experimental function that does not work as expected!");
     let uri = SpotifyUri::Local {
         artist: "Linkin+Park".to_string(),
         album_title: "From+Zero".to_string(),
@@ -421,7 +412,7 @@ pub extern "system" fn Java_cc_tomko_outify_core_spirc_Spirc_seekTo(
 }
 
 #[unsafe(export_name = "Java_cc_tomko_outify_core_spirc_Spirc_shuffle")]
-pub extern "system" fn shuffle_spirc(env: JNIEnv, _this: JClass, enabled: jboolean) -> jboolean {
+pub extern "system" fn shuffle_spirc(_env: JNIEnv, _this: JClass, enabled: jboolean) -> jboolean {
     let enabled = enabled != 0;
     match with_spirc(|runtime| runtime.shuffle(enabled)) {
         Ok(Ok(_)) => 1,
@@ -437,7 +428,7 @@ pub extern "system" fn shuffle_spirc(env: JNIEnv, _this: JClass, enabled: jboole
 }
 
 #[unsafe(export_name = "Java_cc_tomko_outify_core_spirc_Spirc_repeat")]
-pub extern "system" fn repeat_spirc(env: JNIEnv, _this: JClass, enabled: jboolean) -> jboolean {
+pub extern "system" fn repeat_spirc(_env: JNIEnv, _this: JClass, enabled: jboolean) -> jboolean {
     let enabled = enabled != 0;
     match with_spirc(|runtime| runtime.repeat(enabled)) {
         Ok(Ok(_)) => 1,

@@ -1,9 +1,6 @@
 use std::{
-    path::PathBuf,
-    pin::Pin,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        RwLock,
+    pin::Pin, sync::{
+        RwLock, atomic::{AtomicBool, Ordering},
     },
 };
 
@@ -120,7 +117,7 @@ fn start_shutdown_listener(session: Session) {
 
         notify_callback("onShutdown".to_string());
 
-        cleanup();
+        cleanup().await;
 
         warn!("session disconnected, auto-restarting");
 

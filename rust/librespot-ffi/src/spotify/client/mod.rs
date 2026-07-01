@@ -87,7 +87,7 @@ pub(crate) async fn check_response_json<T: serde::de::DeserializeOwned>(
 
 pub fn init_client(client_id: String, client_secret: String) {
     let client = SpotifyClient::new(client_id, client_secret);
-    SPOTIFY_CLIENT.set(client);
+    let _ = SPOTIFY_CLIENT.set(client);
 }
 
 pub fn get_client() -> &'static SpotifyClient {

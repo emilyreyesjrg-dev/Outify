@@ -220,15 +220,8 @@ pub fn on_player_status(playing: bool) {
             return;
         }
     };
-    drop(guard);
 
-    let session = match crate::session::SESSION.get() {
-        Some(s) => s,
-        None => {
-            error!("session not retrieved for on_player_status");
-            return;
-        }
-    };
+    drop(guard);
 
     tokio::spawn(async move {
         let mut env = match jvm.attach_current_thread() {

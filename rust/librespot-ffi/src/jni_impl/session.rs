@@ -1,4 +1,3 @@
-
 use jni::{
     JNIEnv,
     objects::{JClass, JObject},
@@ -50,7 +49,7 @@ pub extern "system" fn Java_cc_tomko_outify_core_Session_shutdown(
     _env: JNIEnv,
     _this: JClass,
 ) -> jboolean {
-    with_session(|session| session.shutdown());
+    let _ = with_session(|session| session.shutdown());
     1
 }
 

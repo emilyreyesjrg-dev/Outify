@@ -3,12 +3,12 @@
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
-struct SearchSection {
+pub struct SearchSection {
     items: Vec<Option<UriItem>>,
 }
 
 #[derive(Deserialize, Debug)]
-struct UriItem {
+pub struct UriItem {
     uri: Option<String>,
 }
 

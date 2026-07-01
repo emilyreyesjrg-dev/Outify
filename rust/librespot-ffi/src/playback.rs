@@ -1,17 +1,13 @@
-use jni::objects::{GlobalRef, JByteBuffer, JObject, JValue};
-use jni::sys::jint;
-use jni::{JNIEnv, JavaVM};
-use librespot_playback::{audio_backend::AndroidSink, config::AudioFormat, player::Player};
+use jni::{JNIEnv, JavaVM, objects::{GlobalRef, JByteBuffer, JObject, JValue}, sys::jint};
+use librespot_playback::{audio_backend::AndroidSink, config::AudioFormat};
 use log::{error, warn};
 use once_cell::sync::OnceCell;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 static JAVA_VM: OnceCell<JavaVM> = OnceCell::new();
 static PCM_CALLBACK: OnceCell<Mutex<Option<GlobalRef>>> = OnceCell::new();
 
 /// Player related
-static PLAYER: OnceCell<Arc<Player>> = OnceCell::new();
-
 static BUFFER_CAPACITY: OnceCell<usize> = OnceCell::new();
 static BUFFER_PTR: OnceCell<usize> = OnceCell::new();
 
@@ -24,6 +20,10 @@ extern "C" fn rust_pcm_trampoline(
     channels: u8,
     format: AudioFormat,
 ) {
+    if format != AudioFormat::S16 {
+        return;
+    } 
+
     if data.is_null() || len == 0 {
         return;
     }

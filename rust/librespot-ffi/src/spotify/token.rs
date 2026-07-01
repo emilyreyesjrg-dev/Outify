@@ -53,9 +53,8 @@ impl WebApiToken {
 }
 
 #[derive(Deserialize)]
-pub(crate) struct TokenResponse {
+pub struct TokenResponse {
     pub access_token: String,
-    pub token_type: String,
     pub expires_in: u64,
     #[serde(default)]
     pub refresh_token: Option<String>,

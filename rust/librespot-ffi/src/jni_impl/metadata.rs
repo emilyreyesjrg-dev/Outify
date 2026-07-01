@@ -10,11 +10,15 @@ use crate::{outifyuri::OutifyUri, session::with_session};
 // From librespot_metadata
 const SPOTIFY_ITEM_TYPE_ALBUM: &str = "album";
 const SPOTIFY_ITEM_TYPE_ARTIST: &str = "artist";
+#[allow(unused)]
 const SPOTIFY_ITEM_TYPE_EPISODE: &str = "episode";
 const SPOTIFY_ITEM_TYPE_PLAYLIST: &str = "playlist";
+#[allow(unused)]
 const SPOTIFY_ITEM_TYPE_SHOW: &str = "show";
 const SPOTIFY_ITEM_TYPE_TRACK: &str = "track";
+#[allow(unused)]
 const SPOTIFY_ITEM_TYPE_LOCAL: &str = "local";
+#[allow(unused)]
 const SPOTIFY_ITEM_TYPE_UNKNOWN: &str = "unknown";
 
 #[unsafe(export_name = "Java_cc_tomko_outify_data_metadata_NativeMetadata_getNativeMetadata")]
@@ -185,48 +189,6 @@ async fn get_playlist_metadata(
             Ok(convert_to_string(&playlist))
         }
         Err(e) => Err(e),
-    }
-}
-
-fn handle_error(e: librespot_core::error::Error) -> String {
-    match e.kind {
-        librespot_core::error::ErrorKind::PermissionDenied => {
-            let err = serde_json::json!({
-                "error": {
-                    "type": "permission_denied",
-                    "message": format!("Permission denied: {}", e)
-                }
-            });
-            err.to_string()
-        }
-        librespot_core::error::ErrorKind::Unauthenticated => {
-            let err = serde_json::json!({
-                "error": {
-                    "type": "unauthenticated",
-                    "message": format!("Unauthenticated: {}", e)
-                }
-            });
-            err.to_string()
-        }
-        librespot_core::error::ErrorKind::ResourceExhausted => {
-            let err = serde_json::json!({
-                "error": {
-                    "type": "rate_limit",
-                    "retry_after_seconds": null,
-                    "message": format!("Rate limited: {}", e)
-                }
-            });
-            err.to_string()
-        }
-        _ => {
-            let err = serde_json::json!({
-                "error": {
-                    "type": "unhandled_error",
-                    "message": format!("Unhandled error: {}", e)
-                }
-            });
-            err.to_string()
-        }
     }
 }
 

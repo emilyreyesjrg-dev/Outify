@@ -36,6 +36,11 @@ class SpClient @Inject constructor() {
         pages: Int = -1
     ): Array<String>
 
+    external fun searchContext(
+        query: String,
+        type: String,
+    ): Array<String>
+
     external fun getUserCollection(query: String? = null): String?
 
     /**

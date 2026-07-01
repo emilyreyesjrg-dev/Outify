@@ -26,7 +26,7 @@ pub struct PlaylistJson {
 
 // Serializable PlaylistAttributes object
 #[derive(Serialize)]
-struct PlaylistAttributesJson {
+pub struct PlaylistAttributesJson {
     name: String,
     description: String,
     picture: Vec<u8>,
@@ -44,14 +44,14 @@ struct PlaylistAttributesJson {
 
 // Serializable PlaylistItem
 #[derive(Serialize)]
-struct PlaylistItemJson {
+pub struct PlaylistItemJson {
     id: String,
     uri: String,
     attributes: PlaylistItemAttributesJson,
 }
 
 #[derive(Serialize)]
-struct PlaylistItemAttributesJson {
+pub struct PlaylistItemAttributesJson {
     added_by: String,
     timestamp: i64,
     seen_at: i64,
@@ -62,7 +62,7 @@ struct PlaylistItemAttributesJson {
 }
 
 #[derive(Serialize)]
-struct PlaylistDiffJson {
+pub struct PlaylistDiffJson {
     #[serde(rename = "from_revision")]
     pub from_revision: String,
     #[serde(rename = "to_revision")]

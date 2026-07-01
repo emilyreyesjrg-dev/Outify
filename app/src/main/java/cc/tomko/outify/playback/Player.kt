@@ -174,6 +174,7 @@ class Player @Inject constructor(
         object : AudioFocusManager.PlayerControl {
             override fun setVolumeMultiplier(volume: Float) {
                 Log.i("Player", "Volume changed to $volume")
+                engine.setVolume(volume)
             }
 
             override fun executePlayerCommand(command: Int) {

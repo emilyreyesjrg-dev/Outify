@@ -3,8 +3,10 @@ package cc.tomko.outify.playback
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFormat
+import android.media.AudioManager
 import android.media.AudioTrack
 import android.util.Log
+import cc.tomko.outify.core.spirc.VolumeController.Companion.SPOTIFY_MAX_VOLUME
 import cc.tomko.outify.playback.callbacks.PlayerEventCallback
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -132,35 +134,6 @@ class AudioEngine(
         }
     }
 
-    private fun writePcm(data: ByteArray, format: PcmFormat) {
-        writeLock.withLock {
-            val t = audioTrack ?: run {
-                Log.w(TAG, "writePcm called with no audio track")
-                return
-            }
-
-            when (format) {
-                PcmFormat.S16 -> {
-                    try {
-                        var offset = 0
-                        var remaining = data.size
-                        while (remaining > 0) {
-                            val written = t.write(data, offset, remaining)
-                            if (written < 0) {
-                                Log.e(TAG, "AudioTrack.write returned error: $written")
-                                break
-                            }
-                            offset += written
-                            remaining -= written
-                        }
-                    } catch (e: IllegalStateException) {
-                        Log.e(TAG, "AudioTrack write failed", e)
-                    }
-                }
-            }
-        }
-    }
-
     fun releaseAudioTrack() {
         writeLock.withLock {
             val t = audioTrack ?: return
@@ -210,6 +183,12 @@ class AudioEngine(
                 }
             }
         }
+    }
+
+    fun setVolume(volume: Float) {
+        audioTrack?.setVolume(
+            volume.coerceIn(0.0f, AudioTrack.getMaxVolume())
+        )
     }
 
     fun flush() {

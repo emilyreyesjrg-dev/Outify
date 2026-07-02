@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Outify</string>
-    <string name="title_activity_main">Outify</string>
     <string name="search_section_albums">Alba</string>
     <string name="search_section_episodes">Epizody</string>
     <string name="repeat_mode_one">Opakovat jednu</string>

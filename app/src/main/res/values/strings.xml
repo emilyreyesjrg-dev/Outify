@@ -1,9 +1,9 @@
 <resources>
-    <string name="app_name">Outify</string>
-    <string name="title_activity_auth">AuthActivity</string>
-    <string name="title_activity_main">Outify</string>
-    <string name="title_activity_callback">CallbackActivity</string>
-    <string name="title_activity_home_screen">HomeScreen</string>
+    <string name="app_name" translatable="false">Outify</string>
+    <string name="title_activity_auth" translatable="false">AuthActivity</string>
+    <string name="title_activity_main" translatable="false">Outify</string>
+    <string name="title_activity_callback" translatable="false">CallbackActivity</string>
+    <string name="title_activity_home_screen" translatable="false">HomeScreen</string>
     <string name="audio_playback_attribution">This app plays audio</string>
     <string name="media_notificationn_channel">Media playback</string>
     <string name="media_notification_channel_description">Controls for audio playback</string>
@@ -13,7 +13,7 @@
     <string name="search_section_albums">Albums</string>
     <string name="search_section_playlists">Playlists</string>
     <string name="search_section_episodes">Episodes</string>
-    <string name="search_section_shows">Shows</string>
+    <string name="search_section_shows" translatable="false">Shows</string>
     <string name="start_radio">Start radio</string>
     <string name="repeat_mode_all">Repeat all</string>
     <string name="repeat_mode_one">Repeat one</string>

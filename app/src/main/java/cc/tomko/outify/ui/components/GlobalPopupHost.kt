@@ -1,5 +1,9 @@
 package cc.tomko.outify.ui.components
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -26,8 +30,10 @@ import cc.tomko.outify.ui.viewmodel.bottomsheet.AddToPlaylistViewModel
 import cc.tomko.outify.ui.viewmodel.bottomsheet.AddToWidgetViewModel
 import cc.tomko.outify.ui.viewmodel.bottomsheet.CreatePlaylistViewModel
 import cc.tomko.outify.ui.viewmodel.bottomsheet.PlaybackDevicesViewModel
+import androidx.compose.material3.ExperimentalMaterial3Api
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GlobalPopupHost(
     backStack: NavBackStack<NavKey>,
@@ -228,6 +234,21 @@ fun GlobalPopupHost(
                     onDismiss = {
                         GlobalPopupController.dismiss(popup.id)
                     }
+                )
+            }
+
+            is PopupSpec.NotificationPermission -> {
+                val permissionLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestPermission()
+                ) { }
+                NotificationPermissionBottomSheet(
+                    onAllow = {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                        GlobalPopupController.dismiss(popup.id)
+                    },
+                    onDismiss = { GlobalPopupController.dismiss(popup.id) },
                 )
             }
 

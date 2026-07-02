@@ -103,4 +103,6 @@ sealed class PopupSpec(
         val folder: PlaylistFolder,
         override val id: String = UUID.randomUUID().toString(),
     ) : PopupSpec(id)
+
+    data object NotificationPermission : PopupSpec()
 }

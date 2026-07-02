@@ -130,7 +130,6 @@ class LikedViewModel @Inject constructor(
             syncNotificationManager.showIndeterminate()
             viewModelScope.launch {
                 isRefreshing.value = true
-                _isFetchingTracks.value = true
                 var totalTracks = 0
                 val result = runCatching {
                     likedRepository.syncLikedTracks(
@@ -147,11 +146,13 @@ class LikedViewModel @Inject constructor(
                     } else {
                         syncNotificationManager.cancel()
                     }
+
+                    isRefreshing.value = false
                 }.onFailure {
                     syncNotificationManager.showError(it.message ?: "Sync failed")
+
+                    isRefreshing.value = false
                 }
-                isRefreshing.value = false
-                _isFetchingTracks.value = false
             }
             // Kick off the first page
             triggerLoad(offset = 0)
@@ -185,7 +186,6 @@ class LikedViewModel @Inject constructor(
                     }.onFailure {
                         Log.w("LikedViewModel", "Failed to load window at $offset", it)
                     }
-                    _fetchedCount.value = offset + PAGE_SIZE
                 }
             } finally {
                 if (acquired) {

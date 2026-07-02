@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -33,6 +35,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeExtendedFloatingActionButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -224,7 +227,7 @@ fun SharedTransitionScope.LikedScreen(
                 }
             }
 
-            if (isFetchingTracks) {
+            if (isRefreshing) {
                 item {
                     SyncProgressBanner(
                         fetchedCount = fetchedCount,
@@ -392,6 +395,13 @@ private fun SyncProgressBanner(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                 )
+                if (totalCount > 0) {
+                    Spacer(Modifier.height(8.dp))
+                    LinearProgressIndicator(
+                        progress = { fetchedCount.toFloat() / totalCount.toFloat() },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         }
     }

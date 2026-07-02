@@ -10,10 +10,9 @@
     <string name="search_section_tracks">Písně</string>
     <string name="search_section_artists">Umělci</string>
     <string name="search_section_playlists">Playlisty</string>
+    <string name="search_section_shows">Shows</string>
     <string name="start_radio">Spustit rádio</string>
     <string name="repeat_mode_all">Opakovat všechny</string>
     <string name="like">Oblíbené</string>
     <string name="outify_playback_widget_description">Rychlý způsob jak přehrát oblibené písně</string>
-    <string name="title_activity_callback">CallbackActivity</string>
-    <string name="title_activity_auth">AuthActivity</string>
 </resources>

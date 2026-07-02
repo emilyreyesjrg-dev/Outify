@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -133,6 +134,12 @@ class MainActivity : ComponentActivity() {
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
             GlobalPopupController.show(PopupSpec.NotificationPermission)
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+            !getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
+        ) {
+            GlobalPopupController.show(PopupSpec.BatteryOptimization)
         }
 
         volumeController.start()

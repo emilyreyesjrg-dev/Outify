@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,11 +29,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NotificationPermissionBottomSheet(
+fun BatteryOptimizationBottomSheet(
     onAllow: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
@@ -44,7 +45,7 @@ fun NotificationPermissionBottomSheet(
         sheetState = sheetState,
         modifier = modifier,
     ) {
-        NotificationPermissionSheetContent(
+        BatteryOptimizationSheetContent(
             onAllow = onAllow,
             onDismiss = onDismiss,
         )
@@ -53,7 +54,7 @@ fun NotificationPermissionBottomSheet(
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun NotificationPermissionSheetContent(
+private fun BatteryOptimizationSheetContent(
     onAllow: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -77,7 +78,7 @@ private fun NotificationPermissionSheetContent(
             ) {
                 Spacer(Modifier.height(30.dp))
                 Icon(
-                    imageVector = Icons.Filled.NotificationsActive,
+                    imageVector = Icons.Filled.BatteryChargingFull,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(52.dp),
@@ -88,18 +89,21 @@ private fun NotificationPermissionSheetContent(
         Spacer(Modifier.height(28.dp))
 
         Text(
-            text = "Stay in sync",
+            text = "Keep the music going",
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.ExtraBold,
             color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
         )
 
         Spacer(Modifier.height(10.dp))
 
         Text(
-            text = "Get notified when your library finishes syncing tracks.",
+            text = "Exempt Outify from battery optimization so playback and " +
+                    "syncs don't get cut off in the background.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
         )
 
         Spacer(Modifier.height(32.dp))
@@ -116,7 +120,7 @@ private fun NotificationPermissionSheetContent(
             ),
         ) {
             Text(
-                text = "Allow notifications",
+                text = "Disable battery optimization",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )

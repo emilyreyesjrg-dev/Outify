@@ -105,4 +105,6 @@ sealed class PopupSpec(
     ) : PopupSpec(id)
 
     data object NotificationPermission : PopupSpec()
+
+    data object BatteryOptimization : PopupSpec()
 }

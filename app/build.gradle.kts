@@ -79,6 +79,8 @@ extensions.configure<ApplicationExtension>("android") {
                 !System.getenv("ANDROID_KEY_PASSWORD").isNullOrBlank()
             ) {
                 signingConfig = signingConfigs.getByName("ciRelease")
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
             }
         }
 

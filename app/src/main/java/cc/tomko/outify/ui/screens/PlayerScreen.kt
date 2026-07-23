@@ -170,7 +170,8 @@ fun PlayerScreen(
                     onFastRewind = {
                         val position = (positionMs - forwardMilliseconds).coerceAtLeast(0)
                         viewModel.onAction(PlayerAction.SeekTo(position))
-                    }
+                    },
+                    showFastForward = forwardMilliseconds > 0
                 )
             }
 
@@ -413,6 +414,7 @@ fun PlaybackControls(
     onFastRewind: () -> Unit,
     onShuffle: () -> Unit,
     onRepeat: () -> Unit,
+    showFastForward: Boolean,
 ) {
     val iconState = when {
         isBuffering -> PlaybackIconState.Buffering
@@ -442,11 +444,13 @@ fun PlaybackControls(
             )
         }
 
-        IconButton(onClick = onFastRewind, modifier = Modifier.size(42.dp)) {
-            Icon(
-                Icons.Default.FastRewind, contentDescription = "FR 15s",
-                modifier = Modifier.size(42.dp)
-            )
+        if(showFastForward) {
+            IconButton(onClick = onFastRewind, modifier = Modifier.size(42.dp)) {
+                Icon(
+                    Icons.Default.FastRewind, contentDescription = "FR 15s",
+                    modifier = Modifier.size(42.dp)
+                )
+            }
         }
 
         FilledIconButton(
@@ -494,11 +498,13 @@ fun PlaybackControls(
             }
         }
 
-        IconButton(onClick = onFastForward, modifier = Modifier.size(42.dp)) {
-            Icon(
-                Icons.Default.FastForward, contentDescription = "FF 15s",
-                modifier = Modifier.size(42.dp)
-            )
+        if(showFastForward) {
+            IconButton(onClick = onFastForward, modifier = Modifier.size(42.dp)) {
+                Icon(
+                    Icons.Default.FastForward, contentDescription = "FF 15s",
+                    modifier = Modifier.size(42.dp)
+                )
+            }
         }
 
         IconButton(onClick = onNext, modifier = Modifier.size(42.dp)) {

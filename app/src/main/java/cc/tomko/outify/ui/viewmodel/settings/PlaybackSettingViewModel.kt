@@ -44,7 +44,6 @@ class PlaybackSettingViewModel @Inject constructor(
 
     fun setFastForwardMs(ms: Long) {
         viewModelScope.launch {
-            _needsRestart.value = true
             settingsRepository.setFastForwardMs(ms)
         }
     }

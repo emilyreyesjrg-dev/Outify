@@ -202,7 +202,7 @@ fun PlaybackSettingScreen(
                                     viewModel.setFastForwardMs((ffSeconds * 1000).toLong())
                                 },
                                 valueRange = 0f..90f,
-                                steps = 16
+                                steps = 17
                             )
                         }
 

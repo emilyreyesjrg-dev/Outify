@@ -16,6 +16,7 @@ import cc.tomko.outify.data.metadata.TrackMetadataHelper
 import cc.tomko.outify.data.repository.SettingsRepository
 import cc.tomko.outify.playback.PlaybackStateHolder
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +28,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
@@ -98,7 +100,9 @@ class HomeViewModel @Inject constructor(
     val isPlaybackLoggedIn: StateFlow<Boolean> = _isPlaybackLoggedIn.asStateFlow()
 
     init {
-        _isPlaybackLoggedIn.value = authManager.hasCachedCredentials()
+        viewModelScope.launch {
+            _isPlaybackLoggedIn.value = withContext(Dispatchers.IO) { authManager.hasCachedCredentials() }
+        }
         loadData()
         viewModelScope.launch {
             AuthStateEventBus.events.collect { event ->
@@ -115,11 +119,11 @@ class HomeViewModel @Inject constructor(
 
                     is AuthStateEvent.PlaybackLoggedIn -> {
                         delay(200)
-                        _isPlaybackLoggedIn.value = authManager.hasCachedCredentials()
+                        _isPlaybackLoggedIn.value = withContext(Dispatchers.IO) { authManager.hasCachedCredentials() }
                     }
 
                     is AuthStateEvent.PlaybackLoggedOut -> {
-                        _isPlaybackLoggedIn.value = authManager.hasCachedCredentials()
+                        _isPlaybackLoggedIn.value = withContext(Dispatchers.IO) { authManager.hasCachedCredentials() }
                     }
                 }
             }
@@ -127,7 +131,9 @@ class HomeViewModel @Inject constructor(
     }
 
     fun refreshPlaybackLoginState() {
-        _isPlaybackLoggedIn.value = authManager.hasCachedCredentials()
+        viewModelScope.launch {
+            _isPlaybackLoggedIn.value = withContext(Dispatchers.IO) { authManager.hasCachedCredentials() }
+        }
     }
 
     fun setDuration(duration: TopItemsDuration) {
@@ -167,7 +173,7 @@ class HomeViewModel @Inject constructor(
             delay(150)
 
             try {
-                val isAuthenticated = spClient.isOAuthAuthenticated()
+                val isAuthenticated = withContext(Dispatchers.IO) { spClient.isOAuthAuthenticated() }
                 if (!isAuthenticated) {
                     _uiState.value = HomeUiState.NotAuthenticated
                     loadUserProfile()
@@ -185,7 +191,7 @@ class HomeViewModel @Inject constructor(
                             TopItemsDuration.LONG_TERM -> allCaches.longTerm
                         }
                         if (hit.artists.isNotEmpty()) {
-                            val cachedTracks = trackMetadataHelper.getTrackMetadata(hit.trackUris)
+                            val cachedTracks = withContext(Dispatchers.IO) { trackMetadataHelper.getTrackMetadata(hit.trackUris) }
                             _uiState.value = HomeUiState.Success(hit.artists, cachedTracks)
                         }
                     } catch (_: Exception) {
@@ -201,7 +207,7 @@ class HomeViewModel @Inject constructor(
                 for (fallbackDuration in durationsToTry) {
                     val durationValue = fallbackDuration.value
 
-                    val topArtistsJson = spClient.getUserTop("artists", durationValue)
+                    val topArtistsJson = withContext(Dispatchers.IO) { spClient.getUserTop("artists", durationValue) }
                     if (topArtistsJson == null) {
                         _uiState.value = HomeUiState.NotAuthenticated
                         loadUserProfile()
@@ -215,7 +221,7 @@ class HomeViewModel @Inject constructor(
                         return@launch
                     }
 
-                    val topTracksJson = spClient.getUserTop("tracks", durationValue)
+                    val topTracksJson = withContext(Dispatchers.IO) { spClient.getUserTop("tracks", durationValue) }
                     if (topTracksJson == null) {
                         _uiState.value = HomeUiState.NotAuthenticated
                         loadUserProfile()
@@ -230,7 +236,7 @@ class HomeViewModel @Inject constructor(
                     }
 
                     val topArtists = parseTopArtists(topArtistsJson)
-                    val topTracks = fetchTrackMetadata(topTracksJson)
+                    val topTracks = withContext(Dispatchers.IO) { fetchTrackMetadata(topTracksJson) }
 
                     if (topArtists.isNotEmpty() || topTracks.isNotEmpty()) {
                         _selectedDuration.value = fallbackDuration
@@ -274,9 +280,9 @@ class HomeViewModel @Inject constructor(
     private fun loadUserProfile() {
         viewModelScope.launch {
             try {
-                val userId = spClient.username() ?: return@launch
+                val userId = withContext(Dispatchers.IO) { spClient.username() } ?: return@launch
 
-                val profileJson = userProfile.getUserProfile(userId)
+                val profileJson = withContext(Dispatchers.IO) { userProfile.getUserProfile(userId) }
                 var profileName: String? = null
                 var profileImageUrl: String? = null
 

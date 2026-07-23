@@ -1,5 +1,6 @@
 package cc.tomko.outify.ui.viewmodel.player
 
+import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cc.tomko.outify.core.SpClient
@@ -9,7 +10,9 @@ import cc.tomko.outify.core.model.SyncedLyric
 import cc.tomko.outify.core.model.Track
 import cc.tomko.outify.core.model.getCover
 import cc.tomko.outify.data.dao.LikedDao
+import cc.tomko.outify.data.repository.InterfaceSettings
 import cc.tomko.outify.data.repository.LikedRepository
+import cc.tomko.outify.data.repository.PlaybackSettings
 import cc.tomko.outify.data.repository.PlayerRepository
 import cc.tomko.outify.data.repository.SettingsRepository
 import cc.tomko.outify.playback.PlaybackStateHolder
@@ -20,6 +23,7 @@ import coil3.ImageLoader
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -84,6 +88,9 @@ class PlayerViewModel @Inject constructor(
                 false
             )
 
+    val forwardMilliseconds: Flow<Int> =
+        settingsRepository.playbackSettings
+            .map { it.forwardMilliseconds }
 
     init {
         viewModelScope.launch {

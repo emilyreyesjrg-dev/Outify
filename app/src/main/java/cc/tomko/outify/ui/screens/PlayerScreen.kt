@@ -35,6 +35,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowLeft
 import androidx.compose.material.icons.automirrored.filled.ArrowRight
 import androidx.compose.material.icons.filled.Explicit
+import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.MoreVert
@@ -84,6 +86,7 @@ import cc.tomko.outify.ui.viewmodel.player.PlayerViewModel
 import cc.tomko.outify.utils.RomanizationUtil
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 private val IMAGE_SIZE = 400.dp
 
@@ -96,6 +99,7 @@ fun PlayerScreen(
     onMoreOptions: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val forwardMilliseconds by viewModel.forwardMilliseconds.collectAsState(15_000)
     val positionMs by viewModel.positionMs.collectAsState()
     val currentTrack by viewModel.currentTrack.collectAsState(initial = null)
     val lyrics by viewModel.lyrics.collectAsState()
@@ -159,6 +163,14 @@ fun PlayerScreen(
                     onPrevious = { viewModel.onAction(PlayerAction.Previous) },
                     onShuffle = { viewModel.onAction(PlayerAction.ShuffleToggle) },
                     onRepeat = { viewModel.onAction(PlayerAction.RepeatToggle) },
+                    onFastForward = {
+                        val position = (positionMs + forwardMilliseconds).coerceAtMost(uiState.totalLengthMs)
+                        viewModel.onAction(PlayerAction.SeekTo(position))
+                    },
+                    onFastRewind = {
+                        val position = (positionMs - forwardMilliseconds).coerceAtLeast(0)
+                        viewModel.onAction(PlayerAction.SeekTo(position))
+                    }
                 )
             }
 
@@ -338,15 +350,23 @@ fun TrackProgressBar(
     onSeek: (Long) -> Unit = {},
 ) {
     var isDragging by remember { mutableStateOf(false) }
-    var sliderValue by remember { mutableFloatStateOf(0f) }
+    var targetSliderValue by remember { mutableFloatStateOf(0f) }
 
     LaunchedEffect(positionMs, durationMs, isDragging) {
         if (!isDragging && durationMs > 0) {
-            sliderValue = (positionMs.toFloat() / durationMs).coerceIn(0f, 1f)
+            targetSliderValue = (positionMs.toFloat() / durationMs).coerceIn(0f, 1f)
         }
     }
 
-    val displayedMs = (sliderValue * durationMs).toLong().coerceIn(0L, durationMs)
+    val animatedSliderValue by animateFloatAsState(
+        targetValue = targetSliderValue,
+        animationSpec = tween(durationMillis = 300),
+        label = "sliderAnimation"
+    )
+
+    val currentValue = if (isDragging) targetSliderValue else animatedSliderValue
+
+    val displayedMs = (currentValue * durationMs).toLong().coerceIn(0L, durationMs)
 
     Column(
         modifier = Modifier
@@ -358,10 +378,13 @@ fun TrackProgressBar(
             style = MaterialTheme.typography.bodyMedium
         )
         WavyMusicSlider(
-            value = sliderValue,
-            onValueChange = { isDragging = true; sliderValue = it.coerceIn(0f, 1f) },
+            value = currentValue,
+            onValueChange = {
+                isDragging = true
+                targetSliderValue = it.coerceIn(0f, 1f)
+            },
             onValueChangeFinished = {
-                onSeek((sliderValue * durationMs).toLong().coerceIn(0L, durationMs))
+                onSeek((targetSliderValue * durationMs).toLong().coerceIn(0L, durationMs))
                 isDragging = false
             },
             isPlaying = isPlaying
@@ -386,6 +409,8 @@ fun PlaybackControls(
     onPlayPause: () -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
+    onFastForward: () -> Unit,
+    onFastRewind: () -> Unit,
     onShuffle: () -> Unit,
     onRepeat: () -> Unit,
 ) {
@@ -413,6 +438,13 @@ fun PlaybackControls(
         IconButton(onClick = onPrevious, modifier = Modifier.size(42.dp)) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowLeft, contentDescription = "Previous",
+                modifier = Modifier.size(42.dp)
+            )
+        }
+
+        IconButton(onClick = onFastRewind, modifier = Modifier.size(42.dp)) {
+            Icon(
+                Icons.Default.FastRewind, contentDescription = "FR 15s",
                 modifier = Modifier.size(42.dp)
             )
         }
@@ -460,6 +492,13 @@ fun PlaybackControls(
                     )
                 }
             }
+        }
+
+        IconButton(onClick = onFastForward, modifier = Modifier.size(42.dp)) {
+            Icon(
+                Icons.Default.FastForward, contentDescription = "FF 15s",
+                modifier = Modifier.size(42.dp)
+            )
         }
 
         IconButton(onClick = onNext, modifier = Modifier.size(42.dp)) {
@@ -537,7 +576,7 @@ fun Lyrics(
             LyricLine(
                 line = line,
                 isActive = index == activeIndex,
-                distance = if (activeIndex >= 0) kotlin.math.abs(index - activeIndex) else Int.MAX_VALUE,
+                distance = if (activeIndex >= 0) abs(index - activeIndex) else Int.MAX_VALUE,
                 onClick = { seekTo(line.timeMs) },
                 romanize = romanize,
             )

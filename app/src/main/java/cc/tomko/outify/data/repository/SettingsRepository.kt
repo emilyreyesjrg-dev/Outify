@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import cc.tomko.outify.core.model.PlaylistFolder
@@ -96,6 +97,8 @@ class SettingsRepository @Inject constructor(
             val LAST_TRACK_URI = stringPreferencesKey("last_track_uri")
             val LAST_CONTEXT_URI = stringPreferencesKey("last_context_uri")
             val LAST_POSITION_MS = stringPreferencesKey("last_position_ms")
+
+            val FORWARD_DURATION_MS = intPreferencesKey("forward_duration_ms")
         }
 
         object Folders {
@@ -170,7 +173,9 @@ class SettingsRepository @Inject constructor(
             keepalive = prefs[Keys.KEEPALIVE] ?: default.keepalive,
             autoTransfer = prefs[Keys.AUTO_TRANSFER] ?: default.autoTransfer,
             bitrate = Bitrate.valueOf(bitrate),
-            deviceName = prefs[Keys.DEVICE_NAME] ?: default.deviceName
+            deviceName = prefs[Keys.DEVICE_NAME] ?: default.deviceName,
+
+            forwardMilliseconds = prefs[Keys.Playback.FORWARD_DURATION_MS] ?: 15_000
         )
     }
 
@@ -583,6 +588,8 @@ data class PlaybackSettings(
     val autoTransfer: Boolean = true,
     val bitrate: Bitrate = Bitrate.KBPS320,
     val deviceName: String = "Outify",
+
+    val forwardMilliseconds: Int = 15_000
 ) {
     companion object {
         val Default = PlaybackSettings()

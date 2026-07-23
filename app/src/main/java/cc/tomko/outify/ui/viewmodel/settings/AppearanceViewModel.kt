@@ -100,4 +100,10 @@ class AppearanceViewModel @Inject constructor(
             settingsRepository.setExperimentalFloatingNav(enabled)
         }
     }
+
+    fun setNavbarShowLabel(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setNavbarShowLabel(enabled)
+        }
+    }
 }

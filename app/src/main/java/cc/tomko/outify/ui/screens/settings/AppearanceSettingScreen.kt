@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayCircleOutline
 import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material.icons.filled.Title
 import androidx.compose.material.icons.filled.Topic
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -258,6 +259,18 @@ fun AppearanceSettingScreen(
                         isChecked = settings.experimentalFloatingNav,
                         onCheckedChange = { viewModel.setExperimentalFloatingNav(it) },
                     )
+                }
+
+                if(settings.experimentalFloatingNav) {
+                    ElevatedCard {
+                        SwitchPreferenceEntry(
+                            title = { Text("Show selected label") },
+                            description = "Show name of current page",
+                            icon = { Icon(Icons.Default.Title, contentDescription = null) },
+                            isChecked = settings.navbarShowLabel,
+                            onCheckedChange = { viewModel.setNavbarShowLabel(it) },
+                        )
+                    }
                 }
             }
         }

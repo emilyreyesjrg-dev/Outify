@@ -425,7 +425,8 @@ class MainActivity : ComponentActivity() {
                                             FloatingOutifyBottomNav(
                                                 items = allRoutes,
                                                 selectedId = selectedId,
-                                                onItemSelected = { item -> backStack.add(item.route) }
+                                                onItemSelected = { item -> backStack.add(item.route) },
+                                                showSelectedLabel = interfaceSettings.navbarShowLabel,
                                             )
                                         }
                                     } else {

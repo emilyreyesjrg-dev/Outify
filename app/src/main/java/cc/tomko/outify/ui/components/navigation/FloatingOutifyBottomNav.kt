@@ -1,9 +1,13 @@
 package cc.tomko.outify.ui.components.navigation
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -13,7 +17,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -35,15 +38,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val ITEM_WIDTH = 56.dp
-private val ITEM_HEIGHT = 44.dp
 private val ROW_PADDING_H = 6.dp
 private val ROW_PADDING_V = 4.dp
+private val ITEM_SPACING = 2.dp
 
 @Composable
 fun FloatingOutifyBottomNav(
@@ -51,13 +53,10 @@ fun FloatingOutifyBottomNav(
     selectedId: String?,
     onItemSelected: (NavDestination) -> Unit,
     modifier: Modifier = Modifier,
-    tonalElevation: Dp = 0.dp,
     selectedColor: Color = MaterialTheme.colorScheme.primary,
     unselectedColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    showLabels: Boolean = false,
+    showSelectedLabel: Boolean = true,
 ) {
-    val selectedIndex = items.indexOfFirst { it.id == selectedId }
-
     Surface(
         modifier = modifier
             .windowInsetsPadding(WindowInsets.navigationBars)
@@ -67,44 +66,22 @@ fun FloatingOutifyBottomNav(
         shadowElevation = 16.dp,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
-        Box {
-            if (selectedIndex >= 0) {
-                val animatedOffsetX by animateDpAsState(
-                    targetValue = ROW_PADDING_H + ITEM_WIDTH * selectedIndex.toFloat(),
-                    animationSpec = tween(
-                        durationMillis = 350,
-                        easing = FastOutSlowInEasing,
-                    ),
-                    label = "indicator",
-                )
-
-                Box(
-                    modifier = Modifier
-                        .offset(x = animatedOffsetX, y = ROW_PADDING_V)
-                        .size(ITEM_WIDTH, ITEM_HEIGHT)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(selectedColor.copy(alpha = 0.15f)),
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .padding(horizontal = ROW_PADDING_H, vertical = ROW_PADDING_V),
-                horizontalArrangement = Arrangement.spacedBy(0.dp, Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                items.forEach { item ->
-                    val isSelected = item.id == selectedId
-                    key(item.id) {
-                        FloatingNavItem(
-                            destination = item,
-                            selected = isSelected,
-                            onClick = { onItemSelected(item) },
-                            selectedColor = selectedColor,
-                            unselectedColor = unselectedColor,
-                            showLabel = showLabels,
-                        )
-                    }
+        Row(
+            modifier = Modifier.padding(horizontal = ROW_PADDING_H, vertical = ROW_PADDING_V),
+            horizontalArrangement = Arrangement.spacedBy(ITEM_SPACING, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            items.forEach { item ->
+                val isSelected = item.id == selectedId
+                key(item.id) {
+                    FloatingNavItem(
+                        destination = item,
+                        selected = isSelected,
+                        onClick = { onItemSelected(item) },
+                        selectedColor = selectedColor,
+                        unselectedColor = unselectedColor,
+                        showLabel = showSelectedLabel,
+                    )
                 }
             }
         }
@@ -120,43 +97,55 @@ private fun FloatingNavItem(
     unselectedColor: Color,
     showLabel: Boolean,
 ) {
-    val iconTint by animateColorAsState(
-        if (selected) selectedColor else unselectedColor,
-        label = "navIcon",
+    val contentColor by animateColorAsState(
+        targetValue = if (selected) selectedColor else unselectedColor,
+        animationSpec = tween(durationMillis = 250),
+        label = "navContentColor",
+    )
+    val backgroundColor by animateColorAsState(
+        targetValue = if (selected) selectedColor.copy(alpha = 0.15f) else Color.Transparent,
+        animationSpec = tween(durationMillis = 250),
+        label = "navBackgroundColor",
     )
 
     Box(
         modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(backgroundColor)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 role = Role.Button,
                 onClick = onClick,
             )
+            .animateContentSize(animationSpec = tween(durationMillis = 250))
             .padding(horizontal = 16.dp, vertical = 10.dp)
             .semantics { contentDescription = destination.label },
         contentAlignment = Alignment.Center,
     ) {
-        CompositionLocalProvider(LocalContentColor provides iconTint) {
-            if (showLabel) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(modifier = Modifier.size(24.dp)) {
-                        destination.icon()
-                    }
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = destination.label,
-                        fontSize = 11.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        color = iconTint,
-                    )
-                }
-            } else {
+        CompositionLocalProvider(LocalContentColor provides contentColor) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(modifier = Modifier.size(24.dp)) {
                     destination.icon()
+                }
+                AnimatedVisibility(
+                    visible = selected && showLabel,
+                    enter = expandHorizontally(animationSpec = tween(220)) +
+                            fadeIn(animationSpec = tween(220, delayMillis = 80)),
+                    exit = shrinkHorizontally(animationSpec = tween(220)) +
+                            fadeOut(animationSpec = tween(120)),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = destination.label,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = contentColor,
+                        )
+                    }
                 }
             }
         }

@@ -88,7 +88,7 @@ class PlayerViewModel @Inject constructor(
                 false
             )
 
-    val forwardMilliseconds: Flow<Int> =
+    val forwardMilliseconds: Flow<Long> =
         settingsRepository.playbackSettings
             .map { it.forwardMilliseconds }
 

@@ -1,12 +1,6 @@
 package cc.tomko.outify.ui.screens.settings
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -33,12 +27,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -55,6 +51,7 @@ import cc.tomko.outify.ui.components.SwitchPreferenceEntry
 import cc.tomko.outify.ui.components.TextInputPreferenceEntry
 import cc.tomko.outify.ui.viewmodel.settings.PlaybackSettingViewModel
 import kotlinx.coroutines.delay
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,17 +65,6 @@ fun PlaybackSettingScreen(
     val romanizeLyrics by viewModel.romanizeLyrics.collectAsState(initial = false)
     val savedClientId by viewModel.clientId.collectAsState(initial = null)
     val savedClientSecret by viewModel.clientSecret.collectAsState(initial = null)
-
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 0.4f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseAlpha"
-    )
 
     Scaffold(
         topBar = {
@@ -100,46 +86,14 @@ fun PlaybackSettingScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+
             item {
+                PreferenceHeader("Audio Settings")
+
                 ElevatedCard(
-                    modifier = modifier
-                        .fillMaxWidth()
+                    modifier = modifier.fillMaxWidth()
                 ) {
                     Column {
-                        SwitchPreferenceEntry(
-                            title = { Text("Gapless playback") },
-                            description = "Smooth playback without gaps",
-                            icon = { Icon(Icons.Default.SkipNext, contentDescription = null) },
-                            onCheckedChange = { viewModel.setGaplessPlayback(it) },
-                            isChecked = settings.gapless
-                        )
-
-                        SwitchPreferenceEntry(
-                            title = { Text("Normalize audio") },
-                            description = "Every track will be the same loudness",
-                            icon = {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.VolumeDown,
-                                    contentDescription = null
-                                )
-                            },
-                            onCheckedChange = { viewModel.setNormalizeAudio(it) },
-                            isChecked = settings.normalizeAudio
-                        )
-
-                        SwitchPreferenceEntry(
-                            title = { Text("Keepalive") },
-                            description = "Allow resurrection from notification",
-                            icon = {
-                                Icon(
-                                    Icons.Default.Healing,
-                                    contentDescription = null
-                                )
-                            },
-                            onCheckedChange = { viewModel.setKeepAlive(it) },
-                            isChecked = settings.keepalive
-                        )
-
                         DropdownPreferenceEntry(
                             title = { Text("Bitrate (Quality)") },
                             description = "Choose your preferred streaming quality",
@@ -161,42 +115,108 @@ fun PlaybackSettingScreen(
                             selectedValue = settings.bitrate,
                             onValueChange = { viewModel.setBitrate(it) }
                         )
+
+                        SwitchPreferenceEntry(
+                            title = { Text("Normalize audio") },
+                            description = "Every track will be the same loudness",
+                            icon = {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.VolumeDown,
+                                    contentDescription = null
+                                )
+                            },
+                            onCheckedChange = { viewModel.setNormalizeAudio(it) },
+                            isChecked = settings.normalizeAudio
+                        )
+
+                        SwitchPreferenceEntry(
+                            title = { Text("Gapless playback") },
+                            description = "Smooth playback without gaps",
+                            icon = { Icon(Icons.Default.SkipNext, contentDescription = null) },
+                            onCheckedChange = { viewModel.setGaplessPlayback(it) },
+                            isChecked = settings.gapless
+                        )
+
+                        ElevatedCard(
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = if (restartNeeded)
+                                    MaterialTheme.colorScheme.tertiaryContainer
+                                else
+                                    MaterialTheme.colorScheme.surface
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column {
+                                PreferenceEntry(
+                                    title = { Text("Restart Spirc") },
+                                    description = "Required to apply playback related settings",
+                                    icon = { Icon(Icons.Default.RestartAlt, contentDescription = null) },
+                                    onClick = {
+                                        viewModel.restartSpirc()
+                                    },
+                                    trailingContent = {
+                                        AnimatedVisibility(
+                                            visible = restartNeeded,
+                                            enter = expandVertically() + fadeIn(),
+                                            exit = shrinkVertically() + fadeOut()
+                                        ) {
+                                            Badge(
+                                                containerColor = MaterialTheme.colorScheme.tertiary
+                                            ) {
+                                                Text("!")
+                                            }
+                                        }
+                                    },
+                                )
+                            }
+                        }
                     }
                 }
             }
 
             item {
+                PreferenceHeader("Controls & Behavior")
+
                 ElevatedCard(
-                    colors = CardDefaults.elevatedCardColors(
-                        containerColor = if (restartNeeded)
-                            MaterialTheme.colorScheme.tertiaryContainer
-                        else
-                            MaterialTheme.colorScheme.surface
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
+                    modifier = modifier.fillMaxWidth()
                 ) {
                     Column {
-                        PreferenceEntry(
-                            title = { Text("Restart Spirc") },
-                            description = "Required to apply playback related settings",
-                            icon = { Icon(Icons.Default.RestartAlt, contentDescription = null) },
-                            onClick = {
-                                viewModel.restartSpirc()
+                        var ffSeconds by remember(settings.forwardMilliseconds) {
+                            mutableFloatStateOf(settings.forwardMilliseconds.toFloat() / 1000f)
+                        }
+
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Fast forward duration",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                text = "${ffSeconds.roundToInt()} seconds",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Slider(
+                                value = ffSeconds,
+                                onValueChange = { ffSeconds = it },
+                                onValueChangeFinished = {
+                                    viewModel.setFastForwardMs((ffSeconds * 1000).toLong())
+                                },
+                                valueRange = 0f..90f,
+                                steps = 16
+                            )
+                        }
+
+                        SwitchPreferenceEntry(
+                            title = { Text("Keepalive") },
+                            description = "Allow resurrection from notification",
+                            icon = {
+                                Icon(
+                                    Icons.Default.Healing,
+                                    contentDescription = null
+                                )
                             },
-                            trailingContent = {
-                                AnimatedVisibility(
-                                    visible = restartNeeded,
-                                    enter = expandVertically() + fadeIn(),
-                                    exit = shrinkVertically() + fadeOut()
-                                ) {
-                                    Badge(
-                                        containerColor = MaterialTheme.colorScheme.tertiary
-                                    ) {
-                                        Text("!")
-                                    }
-                                }
-                            },
+                            onCheckedChange = { viewModel.setKeepAlive(it) },
+                            isChecked = settings.keepalive
                         )
                     }
                 }
@@ -206,8 +226,7 @@ fun PlaybackSettingScreen(
                 PreferenceHeader("Lyrics")
 
                 ElevatedCard(
-                    modifier = modifier
-                        .fillMaxWidth()
+                    modifier = modifier.fillMaxWidth()
                 ) {
                     SwitchPreferenceEntry(
                         title = { Text("Romanize lyrics") },
@@ -220,11 +239,10 @@ fun PlaybackSettingScreen(
             }
 
             item {
-                PreferenceHeader("Spotify")
+                PreferenceHeader("Spotify Connection")
 
                 ElevatedCard(
-                    modifier = modifier
-                        .fillMaxWidth()
+                    modifier = modifier.fillMaxWidth()
                 ) {
                     Column {
                         var deviceName by remember(settings.deviceName) {
@@ -233,13 +251,18 @@ fun PlaybackSettingScreen(
 
                         LaunchedEffect(deviceName) {
                             delay(500)
-
                             val finalValue = deviceName.ifBlank { "Outify" }
-
                             if (finalValue != settings.deviceName) {
                                 viewModel.setDeviceName(finalValue)
                             }
                         }
+
+                        TextInputPreferenceEntry(
+                            title = { Text("Spotify Connect name") },
+                            placeholder = "Outify",
+                            value = deviceName,
+                            onValueChange = { deviceName = it },
+                        )
 
                         SwitchPreferenceEntry(
                             title = { Text("Auto transfer") },
@@ -248,27 +271,20 @@ fun PlaybackSettingScreen(
                             onCheckedChange = { viewModel.setAutoTransfer(it) },
                             isChecked = settings.autoTransfer
                         )
-
-                        TextInputPreferenceEntry(
-                            title = { Text("Spotify Connect name") },
-                            placeholder = "Outify",
-                            value = deviceName,
-                            onValueChange = { deviceName = it },
-                        )
                     }
                 }
             }
 
             item {
                 var advancedSettings by remember { mutableStateOf(false) }
-                ElevatedCard() {
+                ElevatedCard(modifier = modifier.fillMaxWidth()) {
                     PreferenceEntry(
                         title = { Text("Advanced settings") },
                         onClick = { advancedSettings = !advancedSettings }
                     )
 
                     if (advancedSettings) {
-                        Column() {
+                        Column {
                             var clientIdInput by remember(savedClientId) {
                                 mutableStateOf(savedClientId ?: "")
                             }

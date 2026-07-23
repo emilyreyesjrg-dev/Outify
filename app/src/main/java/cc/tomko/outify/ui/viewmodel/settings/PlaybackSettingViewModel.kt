@@ -42,6 +42,13 @@ class PlaybackSettingViewModel @Inject constructor(
         }
     }
 
+    fun setFastForwardMs(ms: Long) {
+        viewModelScope.launch {
+            _needsRestart.value = true
+            settingsRepository.setFastForwardMs(ms)
+        }
+    }
+
     fun setNormalizeAudio(enabled: Boolean) {
         viewModelScope.launch {
             _needsRestart.value = true

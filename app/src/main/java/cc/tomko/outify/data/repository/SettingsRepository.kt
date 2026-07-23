@@ -98,7 +98,7 @@ class SettingsRepository @Inject constructor(
             val LAST_CONTEXT_URI = stringPreferencesKey("last_context_uri")
             val LAST_POSITION_MS = stringPreferencesKey("last_position_ms")
 
-            val FORWARD_DURATION_MS = intPreferencesKey("forward_duration_ms")
+            val FORWARD_DURATION_MS = longPreferencesKey("forward_duration_ms")
         }
 
         object Folders {
@@ -281,6 +281,9 @@ class SettingsRepository @Inject constructor(
     suspend fun setGaplessPlayback(enabled: Boolean) {
         dataStore.edit { it[Keys.GAPLESS] = enabled }
     }
+
+    suspend fun setFastForwardMs(ms: Long) =
+        dataStore.edit { it[Keys.Playback.FORWARD_DURATION_MS] = ms }
 
     suspend fun setNormalizePlayback(enabled: Boolean) {
         dataStore.edit { it[Keys.NORMALIZE_AUDIO] = enabled }
@@ -589,7 +592,7 @@ data class PlaybackSettings(
     val bitrate: Bitrate = Bitrate.KBPS320,
     val deviceName: String = "Outify",
 
-    val forwardMilliseconds: Int = 15_000
+    val forwardMilliseconds: Long = 15_000
 ) {
     companion object {
         val Default = PlaybackSettings()

@@ -50,7 +50,7 @@ class SpircWrapper @Inject constructor(
 
     fun ensureUsable() {
         if (!isUsable) {
-            scope.launch {
+            scope.launch(Dispatchers.IO) {
                 restartCallback?.invoke()
             }
         }
@@ -66,7 +66,7 @@ class SpircWrapper @Inject constructor(
 
     fun restart() {
         setUsable(false)
-        scope.launch {
+        scope.launch(Dispatchers.IO) {
             restartCallback?.invoke()
         }
     }
@@ -279,6 +279,7 @@ class SpircWrapper @Inject constructor(
      */
     override fun playerPlay(): Boolean {
         ensureServiceRunning()
+        if (!isUsable) return false
         return Spirc.playerPlay()
     }
 
@@ -287,6 +288,7 @@ class SpircWrapper @Inject constructor(
      */
     override fun playerPause(): Boolean {
         ensureServiceRunning()
+        if (!isUsable) return false
         return Spirc.playerPause()
     }
 
@@ -295,6 +297,7 @@ class SpircWrapper @Inject constructor(
      */
     override fun playerPlayPause(): Boolean {
         ensureServiceRunning()
+        if (!isUsable) return false
         return Spirc.playerPlayPause()
     }
 

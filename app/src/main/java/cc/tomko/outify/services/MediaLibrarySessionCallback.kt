@@ -25,6 +25,10 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import dagger.hilt.android.qualifiers.ApplicationContext
 import jakarta.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 @UnstableApi
 class MediaLibrarySessionCallback @Inject constructor(
@@ -32,6 +36,8 @@ class MediaLibrarySessionCallback @Inject constructor(
     private val spClient: SpClient,
     private val spircController: SpircController,
 ) : MediaLibraryService.MediaLibrarySession.Callback {
+
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     lateinit var service: PlaybackService
     var toggleLike: () -> Unit = {}
@@ -59,7 +65,9 @@ class MediaLibrarySessionCallback @Inject constructor(
         controller: MediaSession.ControllerInfo,
         isForPlayback: Boolean
     ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
-        spircController.restart()
+        scope.launch {
+            spircController.restart()
+        }
         return super.onPlaybackResumption(mediaSession, controller, isForPlayback)
     }
 

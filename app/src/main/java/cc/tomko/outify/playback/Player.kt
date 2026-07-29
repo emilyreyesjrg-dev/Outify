@@ -178,17 +178,23 @@ class Player @Inject constructor(
             }
 
             override fun executePlayerCommand(command: Int) {
-                scope.launch {
-                    when (command) {
-                        AudioFocusManager.PLAYER_COMMAND_WAIT_FOR_CALLBACK,
-                        AudioFocusManager.PLAYER_COMMAND_DO_NOT_PLAY -> {
+                when (command) {
+                    AudioFocusManager.PLAYER_COMMAND_WAIT_FOR_CALLBACK,
+                    AudioFocusManager.PLAYER_COMMAND_DO_NOT_PLAY -> {
+                        scope.launch(Dispatchers.IO) {
                             spirc.playerPause()
+                        }
+                        scope.launch {
                             stateHolder.setPlaying(false)
                             invalidateState()
                         }
+                    }
 
-                        AudioFocusManager.PLAYER_COMMAND_PLAY_WHEN_READY -> {
+                    AudioFocusManager.PLAYER_COMMAND_PLAY_WHEN_READY -> {
+                        scope.launch(Dispatchers.IO) {
                             spirc.playerPlay()
+                        }
+                        scope.launch {
                             stateHolder.setPlaying(true)
                             invalidateState()
                         }
@@ -266,14 +272,16 @@ class Player @Inject constructor(
 
         val playerCommand = audioFocusManager.updateAudioFocus(playWhenReady, currentMedia3State)
 
-        when (playerCommand) {
-            AudioFocusManager.PLAYER_COMMAND_PLAY_WHEN_READY -> {
-                if (playWhenReady) spirc.playerPlay() else spirc.playerPause()
-            }
+        scope.launch(Dispatchers.IO) {
+            when (playerCommand) {
+                AudioFocusManager.PLAYER_COMMAND_PLAY_WHEN_READY -> {
+                    if (playWhenReady) spirc.playerPlay() else spirc.playerPause()
+                }
 
-            AudioFocusManager.PLAYER_COMMAND_DO_NOT_PLAY,
-            AudioFocusManager.PLAYER_COMMAND_WAIT_FOR_CALLBACK -> {
-                spirc.playerPause()
+                AudioFocusManager.PLAYER_COMMAND_DO_NOT_PLAY,
+                AudioFocusManager.PLAYER_COMMAND_WAIT_FOR_CALLBACK -> {
+                    spirc.playerPause()
+                }
             }
         }
         return Futures.immediateVoidFuture()
@@ -286,23 +294,23 @@ class Player @Inject constructor(
     ): ListenableFuture<*> {
 //        spirc.seekTo(mediaItemIndex, positionMs)
         when (seekCommand) {
-            COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM -> spirc.playerPrevious()
-            COMMAND_SEEK_TO_PREVIOUS -> spirc.playerPrevious()
+            COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM -> scope.launch(Dispatchers.IO) { spirc.playerPrevious() }
+            COMMAND_SEEK_TO_PREVIOUS -> scope.launch(Dispatchers.IO) { spirc.playerPrevious() }
 
-            COMMAND_SEEK_TO_NEXT_MEDIA_ITEM -> spirc.playerNext()
-            COMMAND_SEEK_TO_NEXT -> spirc.playerNext()
+            COMMAND_SEEK_TO_NEXT_MEDIA_ITEM -> scope.launch(Dispatchers.IO) { spirc.playerNext() }
+            COMMAND_SEEK_TO_NEXT -> scope.launch(Dispatchers.IO) { spirc.playerNext() }
 
-            COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM -> {
-                scope.launch {
-                    spirc.seekTo(positionMs)
-                }
+            COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM -> scope.launch(Dispatchers.IO) {
+                spirc.seekTo(positionMs)
             }
         }
         return Futures.immediateVoidFuture()
     }
 
     override fun handleStop(): ListenableFuture<*> {
-        spirc.playerPause() //TODO: Implement playerStop
+        scope.launch(Dispatchers.IO) {
+            spirc.playerPause() //TODO: Implement playerStop
+        }
         audioFocusManager.updateAudioFocus(false, STATE_IDLE)
         return Futures.immediateVoidFuture()
     }
@@ -318,7 +326,9 @@ class Player @Inject constructor(
     }
 
     override fun handleSetShuffleModeEnabled(shuffleModeEnabled: Boolean): ListenableFuture<*> {
-        spirc.shuffle(shuffleModeEnabled)
+        scope.launch(Dispatchers.IO) {
+            spirc.shuffle(shuffleModeEnabled)
+        }
         return Futures.immediateVoidFuture()
     }
 
@@ -328,7 +338,9 @@ class Player @Inject constructor(
     }
 
     override fun handlePrepare(): ListenableFuture<*> {
-        spirc.ensureUsable()
+        scope.launch(Dispatchers.IO) {
+            spirc.ensureUsable()
+        }
 
         return super.handlePrepare()
     }

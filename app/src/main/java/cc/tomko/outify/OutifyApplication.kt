@@ -49,8 +49,9 @@ class OutifyApplication : Application() {
 
         setDetailViewModelStore(detailViewModelStore)
 
+        System.loadLibrary("librespot_ffi")
+
         appScope.launch {
-            System.loadLibrary("librespot_ffi")
             LibrespotFfi.libInit(applicationContext)
 
             val intent = Intent(this@OutifyApplication, PlaybackService::class.java)

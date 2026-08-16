@@ -1,5 +1,5 @@
-name: Bug report
-description: Report a bug with Outify
+name: General Bug
+description: Report a general bug with Outify
 title: "[Bug]: "
 labels: ['bug']
 body:
@@ -63,17 +63,3 @@ body:
           options:
               - label: 'Yes'
                 required: true
-
-    - type: checkboxes
-      id: playbacklogin
-      attributes:
-          label: Are you signed in using 'Playback login'?
-          options:
-              - label: 'Yes'
-
-    - type: checkboxes
-      id: accountlogin
-      attributes:
-          label: Are you signed in using 'Account login'?
-          options:
-              - label: 'Yes'

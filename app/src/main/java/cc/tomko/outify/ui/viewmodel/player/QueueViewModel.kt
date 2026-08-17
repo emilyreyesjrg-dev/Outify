@@ -65,6 +65,13 @@ class QueueViewModel @Inject constructor(
             initialValue = false
         )
 
+    val isShuffling: StateFlow<Boolean> = settingsRepository.shuffleEnabled
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = false
+        )
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val likedTrackIds: StateFlow<Set<String>> =
         likedDao.observeLikedIds()
@@ -97,6 +104,16 @@ class QueueViewModel @Inject constructor(
 
     private var previousLoadJob: Job? = null
     private var nextLoadJob: Job? = null
+
+    fun toggleShuffle() {
+        val newValue = !isShuffling.value
+
+        viewModelScope.launch {
+            settingsRepository.setShuffle(newValue)
+            spirc.shuffle(newValue)
+            loadQueue(currentTrack.value)
+        }
+    }
 
     val currentTrackEntry: QueueEntry?
         get() = _queueState.value.tracks.getOrNull(_queueState.value.currentIndex)

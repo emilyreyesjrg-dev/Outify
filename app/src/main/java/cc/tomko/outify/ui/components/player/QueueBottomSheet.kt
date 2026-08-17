@@ -26,6 +26,8 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoveUp
 import androidx.compose.material.icons.filled.RemoveCircle
 import androidx.compose.material.icons.filled.SearchOff
+import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.ShuffleOn
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -59,6 +61,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import cc.tomko.outify.MyIcons
 import cc.tomko.outify.core.model.Artist
 import cc.tomko.outify.core.model.Track
 import cc.tomko.outify.data.repository.SettingsRepository
@@ -83,10 +86,9 @@ fun SharedTransitionScope.QueueBottomSheet(
 ) {
     val hapticFeedback = LocalHapticFeedback.current
     val queueState by viewModel.queueState.collectAsState()
-    val coroutineScope = rememberCoroutineScope()
-    val spirc = viewModel.spirc
 
     val isPlaybackPlaying by viewModel.isPlaying.collectAsState(initial = false)
+    val isShuffling by viewModel.isShuffling.collectAsState(initial = false)
     val currentTrack by viewModel.currentTrack.collectAsState(initial = null)
     val likedTracksId by viewModel.likedTrackIds.collectAsState()
 
@@ -211,6 +213,15 @@ fun SharedTransitionScope.QueueBottomSheet(
                             fontWeight = FontWeight.Medium,
                         )
                     }
+                }
+
+                IconButton(onClick = { viewModel.toggleShuffle() }) {
+                    Icon(
+                        if(isShuffling) MyIcons.Shuffle else MyIcons.NoShuffle,
+                        contentDescription = "Shuffle queue",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
 
                 IconButton(onClick = { showSaveDialog = true }) {

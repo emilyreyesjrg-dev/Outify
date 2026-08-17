@@ -77,6 +77,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cc.tomko.outify.ALBUM_COVER_URL
+import cc.tomko.outify.MyIcons
 import cc.tomko.outify.core.model.Artist
 import cc.tomko.outify.core.model.SyncedLyric
 import cc.tomko.outify.core.model.Track
@@ -451,7 +452,7 @@ fun PlaybackControls(
             modifier = Modifier.size(42.dp),
             shape = MaterialShapes.Cookie6Sided.toShape(),
         ) {
-            Icon(Icons.Outlined.Shuffle, contentDescription = "Shuffle")
+            Icon(if(isShuffling)MyIcons.Shuffle else MyIcons.NoShuffle, contentDescription = "Shuffle", modifier = Modifier.size(20.dp))
         }
 
         IconButton(onClick = onPrevious, modifier = Modifier.size(42.dp)) {

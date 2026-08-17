@@ -8,4 +8,12 @@ object MyIcons {
     val BrokenHeart: ImageVector
         @Composable
         get() = ImageVector.vectorResource(id = R.drawable.heart_broken)
+
+    val Shuffle: ImageVector
+        @Composable
+        get() = ImageVector.vectorResource(id = R.drawable.shuffle)
+
+    val NoShuffle: ImageVector
+        @Composable
+        get() = ImageVector.vectorResource(id = R.drawable.no_shuffle)
 }

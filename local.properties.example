@@ -1,0 +1,4 @@
+# Client ID of your Spotify App. See CONTRIBUTING.md for details
+spotify.playback.clientId=
+# Client Secret of your Spotify App. See CONTRIBUTING.md for details
+spotify.playback.clientSecret=

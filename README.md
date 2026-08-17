@@ -1,4 +1,8 @@
 <!-- markdownlint-disable -->
+> [!WARNING]
+> Starting from **September 1st 2026** old Spotify credentials will be revoked. Users on version **< 1.8.0** will no longer be able to stream audio.
+> To keep streaming audio, update the app and follow guides.
+
 <div align="center">
   <a href="https://github.com/iTomKo/Outify">
     <img src="./.github/logo.svg" alt="Outify" width="150">

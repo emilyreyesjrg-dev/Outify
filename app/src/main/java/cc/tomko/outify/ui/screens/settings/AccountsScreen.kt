@@ -120,6 +120,66 @@ fun AccountsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
+                AnimatedVisibility(
+                    visible = !isPremium || !isAccountLoggedIn
+                ) {
+
+                    Surface(
+                        onClick = {
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    "https://github.com/librespot-org/librespot#librespot".toUri()
+                                )
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.errorContainer,
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(20.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(44.dp),
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    Icon(
+                                        Icons.Default.Warning,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onError,
+                                        modifier = Modifier.size(24.dp),
+                                    )
+                                }
+                            }
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Spotify Premium required",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = "Outify only works with a Spotify Premium account. Tap to learn why.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -404,66 +464,6 @@ fun AccountsScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                    }
-                }
-            }
-
-            item {
-                AnimatedVisibility(
-                    visible = !isPremium || !isAccountLoggedIn
-                ) {
-
-                    Surface(
-                        onClick = {
-                            context.startActivity(
-                                Intent(
-                                    Intent.ACTION_VIEW,
-                                    "https://github.com/librespot-org/librespot#librespot".toUri()
-                                )
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.errorContainer,
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(20.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(44.dp),
-                            ) {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    Icon(
-                                        Icons.Default.Warning,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onError,
-                                        modifier = Modifier.size(24.dp),
-                                    )
-                                }
-                            }
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Spotify Premium required",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onErrorContainer,
-                                )
-                                Spacer(Modifier.height(4.dp))
-                                Text(
-                                    text = "Outify only works with a Spotify Premium account. Tap to learn why.",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
-                                )
-                            }
-                        }
                     }
                 }
             }

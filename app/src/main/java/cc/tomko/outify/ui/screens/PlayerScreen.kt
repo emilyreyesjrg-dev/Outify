@@ -2,6 +2,7 @@ package cc.tomko.outify.ui.screens
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -53,6 +54,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.motionScheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.toShape
@@ -113,7 +115,7 @@ fun PlayerScreen(
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
         val artworkTopSpacer = ((maxHeight - IMAGE_SIZE) / 3f - 48.dp).coerceAtLeast(16.dp)
 
@@ -128,10 +130,21 @@ fun PlayerScreen(
             item { Spacer(Modifier.height(artworkTopSpacer)) }
 
             item {
+                val imageScale by animateFloatAsState(
+                    targetValue = if (uiState.isPlaying) 1f else 0.85f,
+                    animationSpec = motionScheme.defaultSpatialSpec(),
+                    label = "albumArtScale"
+                )
+
                 SmartImage(
                     url = artworkUrl,
                     imageSize = IMAGE_SIZE,
-                    monochrome = LocalUiSettings.current.monochromePlayer
+                    monochrome = LocalUiSettings.current.monochromePlayer,
+                    shape = RoundedCornerShape(18.dp),
+                    modifier = Modifier.graphicsLayer {
+                        scaleX = imageScale
+                        scaleY = imageScale
+                    }
                 )
             }
 
@@ -241,7 +254,7 @@ private fun TrackInfo(track: Track?, onArtistClick: (Artist) -> Unit) {
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start,
+            horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth()
         ) {
             if (track?.explicit ?: false) {
@@ -259,7 +272,11 @@ private fun TrackInfo(track: Track?, onArtistClick: (Artist) -> Unit) {
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
-        Row {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             track?.artists?.forEachIndexed { index, artist ->
                 Text(
                     text = artist.name,

@@ -32,7 +32,7 @@ cargo ndk --version # Verify installation
     - Create new app at [Spotify Developers Dashboard](https://developer.spotify.com/dashboard/create) [! Requires Spotify Premium]
     - Set Redirect URI(s) to `http://127.0.0.1:5588/account/login`
     - Copy **Client Secret** and **Client Id**
-    - Paste these credentials into `local.properties` (see `local.properties.example` for more)
+    - Paste these credentials into `keystore.properties` (see `keystore.properties.example` for more)
 
 ### Building from source
 Prerequisites:

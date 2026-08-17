@@ -2,6 +2,7 @@ package cc.tomko.outify
 
 import android.app.Application
 import android.content.Intent
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
@@ -51,8 +52,16 @@ class OutifyApplication : Application() {
 
         System.loadLibrary("librespot_ffi")
 
+        val spotifySecret = BuildConfig.SPOTIFY_CLIENT_SECRET
+        val spotifyId = BuildConfig.SPOTIFY_CLIENT_ID
+
+        if(spotifySecret.isEmpty() || spotifyId.isEmpty()) {
+            Toast.makeText(this, "No Spotify credentials were supplied during build", Toast.LENGTH_LONG).show()
+            throw Exception("No Spotify credentials were supplied during build! spotify.playback.clientId is${if(spotifyId.isEmpty()) "" else " not"} empty; spotify.playback.clientSecret is${if(spotifySecret.isEmpty()) "" else " not"} empty")
+        }
+
         appScope.launch {
-            LibrespotFfi.libInit(applicationContext)
+            LibrespotFfi.libInit(applicationContext, spotifyId, spotifySecret)
 
             val intent = Intent(this@OutifyApplication, PlaybackService::class.java)
             ContextCompat.startForegroundService(this@OutifyApplication, intent)

@@ -1,5 +1,6 @@
 import com.android.build.api.dsl.ApplicationExtension
 import java.time.LocalDate
+import java.util.Properties
 
 plugins {
     id("eclipse")
@@ -10,6 +11,11 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 
     kotlin("plugin.serialization") version "2.3.0"
+}
+
+val keystoreProps = Properties().apply {
+    val f = rootProject.file("keystore.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
 }
 
 ksp {
@@ -37,7 +43,10 @@ extensions.configure<ApplicationExtension>("android") {
         targetSdk = 36
         versionCode = majorVersion * 10_000 + minorVersion * 100 + patchVersion
         versionName = "$majorVersion.$minorVersion.$patchVersion"
-			}
+
+        buildConfigField("String", "SPOTIFY_CLIENT_ID", "\"${keystoreProps.getProperty("spotify.playback.clientId", "")}\"")
+        buildConfigField("String", "SPOTIFY_CLIENT_SECRET", "\"${keystoreProps.getProperty("spotify.playback.clientSecret", "")}\"")
+    }
 
     signingConfigs {
         create("ciRelease") {
